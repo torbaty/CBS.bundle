@@ -1,8 +1,6 @@
-import re, datetime
+import datetime
 
 ####################################################################################################
-
-VIDEO_PREFIX = "/video/cbs"
 
 NAME          = 'CBS'
 ART           = 'art-default.jpg'
@@ -22,14 +20,19 @@ CBS_SMIL         = "http://release.theplatform.com/content.select?format=SMIL&Tr
 ####################################################################################################
 def Start():
 
-    Plugin.AddPrefixHandler(VIDEO_PREFIX, MainMenu, 'CBS', ICON, ART)
+    Plugin.AddPrefixHandler('/video/cbs', MainMenu, NAME, ICON, ART)
 
     Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
     Plugin.AddViewGroup("List", viewMode="List", mediaType="items")
 
     MediaContainer.art = R(ART)
     MediaContainer.title1 = NAME
+    MediaContainer.viewGroup = "InfoList"
     DirectoryItem.thumb = R(ICON)
+    VideoItem.thumb = R(ICON)
+
+    HTTP.CacheTime = CACHE_1HOUR
+    HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.16) Gecko/20110319 Firefox/3.6.16'
 
 ####################################################################################################
 def MainMenu():
@@ -63,7 +66,7 @@ def VideoPlayer(sender, pid):
     
 ####################################################################################################
 def VideosPage(sender, clips, showname, server):
-    dir = MediaContainer(title2=sender.itemTitle, viewGroup="InfoList")
+    dir = MediaContainer(title2=sender.itemTitle)
     if(Prefs['hd']):
     	hd = ''
     else:
@@ -86,10 +89,15 @@ def VideosPage(sender, clips, showname, server):
         airdate = int(item['airdate'])/1000
         subtitle = 'Originally Aired: ' + datetime.datetime.fromtimestamp(airdate).strftime('%a %b %d, %Y')
         dir.Append(Function(VideoItem(VideoPlayer, title=title, subtitle=subtitle, summary=summary, thumb=thumb, duration=duration), pid=pid))
-    return dir
-    
+
+    if len(dir) == 0:
+        return MessageContainer("Empty", "There aren't any items")
+    else:
+        return dir
+
+####################################################################################################
 def ClipsPage(sender, showname, server):
-    dir = MediaContainer(title2=sender.itemTitle, viewGroup="InfoList")
+    dir = MediaContainer(title2=sender.itemTitle)
     dir.Append(Function(DirectoryItem(VideosPage, "Full Episodes"), clips="true", showname=showname, server=server))
     dir.Append(Function(DirectoryItem(VideosPage, "Clips"), clips="false", showname=showname, server=server))
     return dir
