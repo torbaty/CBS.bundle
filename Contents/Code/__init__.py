@@ -88,7 +88,7 @@ def VideosPage(sender, clips, showname, server):
         thumb = item['thumbnailURL']
         airdate = int(item['airdate'])/1000
         subtitle = 'Originally Aired: ' + datetime.datetime.fromtimestamp(airdate).strftime('%a %b %d, %Y')
-        dir.Append(Function(VideoItem(VideoPlayer, title=title, subtitle=subtitle, summary=summary, thumb=thumb, duration=duration), pid=pid))
+        dir.Append(Function(VideoItem(VideoPlayer, title=title, subtitle=subtitle, summary=summary, thumb=Function(GetThumb, url=thumb), duration=duration), pid=pid))
 
     if len(dir) == 0:
         return MessageContainer("Empty", "There aren't any items")
@@ -97,11 +97,11 @@ def VideosPage(sender, clips, showname, server):
 
 ####################################################################################################
 def ClipsPage(sender, showname, server):
-    dir = MediaContainer(title2=sender.itemTitle)
+    dir = MediaContainer(title2=sender.itemTitle, viewGroup="List")
     dir.Append(Function(DirectoryItem(VideosPage, "Full Episodes"), clips="true", showname=showname, server=server))
     dir.Append(Function(DirectoryItem(VideosPage, "Clips"), clips="false", showname=showname, server=server))
     return dir
-    
+
 ####################################################################################################
 def ShowsPage(sender, pageUrl, showtime, category):
     dir = MediaContainer(title2=sender.itemTitle, viewGroup="List")
@@ -145,3 +145,11 @@ def ShowsPage(sender, pageUrl, showtime, category):
         	dir.Append(Function(DirectoryItem(VideosPage, "*Robotech"), clips="true", showname = "Robotech", server = HIDDEN_SERVER))
     		dir.Append(Function(DirectoryItem(VideosPage, "*Victoria's Secret"), clips="false", showname = "Victorias%20Secret", server = VICTORIA_SERVER))
     return dir
+
+####################################################################################################
+def GetThumb(url):
+    try:
+        data = HTTP.Request(url, cacheTime=CACHE_1MONTH).content
+        return DataObject(data, 'image/jpeg')
+    except:
+        return Redirect(R(ICON))

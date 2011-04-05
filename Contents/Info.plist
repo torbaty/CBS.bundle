@@ -25,7 +25,7 @@
 		<string>Flash</string>
 	</array>
 	<key>PlexPluginConsoleLogging</key>
-	<string>0</string>
+	<string>1</string>
 	<key>PlexPluginDevMode</key>
 	<string>0</string>
 	<key>PlexPluginMode</key>
