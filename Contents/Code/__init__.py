@@ -34,12 +34,12 @@ def Start():
 ####################################################################################################
 def MainMenu():
 	dir = MediaContainer(viewGroup='List')
-	dir.Append(Function(DirectoryItem(Shows, 'Primetime'), category='primetime'))
-	dir.Append(Function(DirectoryItem(Shows, 'Daytime'), category='daytime'))
-	dir.Append(Function(DirectoryItem(Shows, 'Late Night'), category='latenight'))
-	dir.Append(Function(DirectoryItem(Shows, 'Classics'), category='classics'))
-	dir.Append(Function(DirectoryItem(Shows, 'Specials'), category='specials'))
-	dir.Append(PrefsItem(L('Preferences...'), thumb=R('icon-prefs.png')))
+	dir.Append(Function(DirectoryItem(Shows, title='Primetime'), category='primetime'))
+	dir.Append(Function(DirectoryItem(Shows, title='Daytime'), category='daytime'))
+	dir.Append(Function(DirectoryItem(Shows, title='Late Night'), category='latenight'))
+	dir.Append(Function(DirectoryItem(Shows, title='Classics'), category='classics'))
+	dir.Append(Function(DirectoryItem(Shows, title='Specials'), category='specials'))
+	dir.Append(PrefsItem(title='Preferences...', thumb=R('icon-prefs.png')))
 	return dir
 
 ####################################################################################################
