@@ -37,12 +37,12 @@ def Start():
 ####################################################################################################
 def MainMenu():
 	dir = MediaContainer(viewGroup="List")
-	dir.Append(Function(DirectoryItem(ShowsPage, "Primetime"), pageUrl = CBS_LIST, showtime="id('navigation')/li[1]/ul/li/a", category="primetime/"))
-	dir.Append(Function(DirectoryItem(ShowsPage, "Daytime"), pageUrl = CBS_LIST, showtime="id('navigation')/li[2]/ul/li/a", category="daytime/"))
-	dir.Append(Function(DirectoryItem(ShowsPage, "Late Night"), pageUrl = CBS_LIST, showtime="id('navigation')/li[3]/ul/li/a", category=""))
-	dir.Append(Function(DirectoryItem(ShowsPage, "TV Classics"), pageUrl = CBS_LIST, showtime="id('navigation')/li[6]/ul/li/a", category="classics/"))
+	dir.Append(Function(DirectoryItem(ShowsPage, "Primetime"), pageUrl = CBS_LIST, showtime="id('primetime')//span", category="primetime/"))
+	dir.Append(Function(DirectoryItem(ShowsPage, "Daytime"), pageUrl = CBS_LIST, showtime="id('daytime')//span", category="daytime/"))
+	dir.Append(Function(DirectoryItem(ShowsPage, "Late Night"), pageUrl = CBS_LIST, showtime="id('latenight')//span", category=""))
+	dir.Append(Function(DirectoryItem(ShowsPage, "TV Classics"), pageUrl = CBS_LIST, showtime="id('classics')//span", category="classics/"))
 ###  "ORIGINALS | MOVIES | SPECIALS" DOESN'T SEEM TO HAVE MUCH USEFUL (EXCEPT VICTORIA'S SECRET) 
-	dir.Append(Function(DirectoryItem(ShowsPage, "Originals | Movies | Specials"), pageUrl = CBS_LIST, showtime="id('navigation')/li[5]/ul/li/a", category="specials/"))
+	dir.Append(Function(DirectoryItem(ShowsPage, "Originals | Movies | Specials"), pageUrl = CBS_LIST, showtime="//div[@id='originals' or @id='specials' or @id='movies']//span", category="originals/"))
 	dir.Append(PrefsItem(L("Preferences..."), thumb=R('icon-prefs.png')))
 	return dir
     
@@ -111,8 +111,9 @@ def ShowsPage(sender, pageUrl, showtime, category):
     	dir.Append(Function(DirectoryItem(ClipsPage, "Victoria's Secret"), showname = "Victorias%20Secret", server = DEFAULT_SERVER))
     else:
     	for item in content.xpath(showtime):
-    		showname = item.text
-        	title = item.text
+    		Log(HTML.StringFromElement(item))
+    		showname = item.text.strip()
+        	title = item.text.strip()
     		if "The Original Series" in showname:
     			showname = "Star Trek Remastered"  ### THESE ARE HD FEEDS - NEED TO FIND LOWER QUALITY
     			title += " (HD only)"
@@ -137,6 +138,10 @@ def ShowsPage(sender, pageUrl, showtime, category):
         		showname = "Bold and the Beautiful"
         	elif "Young and the Restless" in showname:
         		showname = "Young and the Restless"
+        		
+        	if "VICTORIA'S" in showname:
+          	  showname = "Victorias%20Secret"
+          	  
         	showname = showname.replace('Mystery', '').replace(' ', '%20').replace('&', '%26')  ### FORMATTING FIX
         	#Log(showname)
         	dir.Append(Function(DirectoryItem(ClipsPage, title), showname=showname, server=server))
@@ -144,6 +149,7 @@ def ShowsPage(sender, pageUrl, showtime, category):
         	dir.Append(Function(DirectoryItem(ClipsPage, "*The Three Stooges"), showname = "The%20Three%20Stooges%20Show", server = HIDDEN_SERVER))
         	dir.Append(Function(DirectoryItem(VideosPage, "*Robotech"), clips="true", showname = "Robotech", server = HIDDEN_SERVER))
     		dir.Append(Function(DirectoryItem(VideosPage, "*Victoria's Secret"), clips="false", showname = "Victorias%20Secret", server = VICTORIA_SERVER))
+        
     return dir
 
 ####################################################################################################
