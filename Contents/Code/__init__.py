@@ -102,6 +102,7 @@ def EpisodesAndClips(sender, title, display_title):
 ####################################################################################################
 def Videos(sender, full_episodes, title, display_title):
 	dir = MediaContainer(title2=display_title)
+	processed_titles = []
 
 	if Prefs['hd']:
 		hd = ''
@@ -118,20 +119,25 @@ def Videos(sender, full_episodes, title, display_title):
 			encoding = ''
 
 			for item in feeds['items']:
-				if hd == '':
-					if "HD" in item['encodingProfile']:
-						encoding = " - HD " + item['encodingProfile'][3:8].replace(' ', '')
-					else:
-						encoding = ''
+				title = item['contentCustomData'][0]['value']
 
-				video_title = item['contentCustomData'][0]['value'] + str(encoding)
-				pid = item['PID']
-				summary = item['description'].replace('In Full:', '')
-				duration = item['length']
-				thumb = item['thumbnailURL']
-				airdate = int(item['airdate'])/1000
-				subtitle = 'Originally Aired: ' + datetime.datetime.fromtimestamp(airdate).strftime('%a %b %d, %Y')
-				dir.Append(Function(VideoItem(PlayVideo, title=video_title, subtitle=subtitle, summary=summary, thumb=Function(GetThumb, url=thumb), duration=duration), pid=pid))
+				if title not in processed_titles:
+					if hd == '':
+						if "HD" in item['encodingProfile']:
+							encoding = " - HD " + item['encodingProfile'][3:8].replace(' ', '')
+						else:
+							encoding = ''
+
+					video_title = title + str(encoding)
+					pid = item['PID']
+					summary = item['description'].replace('In Full:', '')
+					duration = item['length']
+					thumb = item['thumbnailURL']
+					airdate = int(item['airdate'])/1000
+					subtitle = 'Originally Aired: ' + datetime.datetime.fromtimestamp(airdate).strftime('%a %b %d, %Y')
+					dir.Append(Function(VideoItem(PlayVideo, title=video_title, subtitle=subtitle, summary=summary, thumb=Function(GetThumb, url=thumb), duration=duration), pid=pid))
+
+					processed_titles.append(title)
 
 			Log(' --> Success! Found ' + str(len(feeds['items'])) + ' items')
 		except:
