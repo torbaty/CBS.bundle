@@ -30,5 +30,12 @@
 	<array>
 		<string>US</string>
 	</array>
+	<key>PlexClientCapabilities</key>
+	<dict>
+		<key>protocols</key>
+		<array>
+			<string>webkit</string>
+		</array>
+	</dict>
 </dict>
 </plist>
