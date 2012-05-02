@@ -1,5 +1,3 @@
-import datetime
-
 ####################################################################################################
 
 NAME = 'CBS'
@@ -19,14 +17,9 @@ SERVERS = ['CBS%20Production%20Delivery%20h264%20Akamai',
 def Start():
 	Plugin.AddPrefixHandler('/video/cbs', MainMenu, NAME, ICON, ART)
 
-	Plugin.AddViewGroup('InfoList', viewMode='InfoList', mediaType='items')
-	Plugin.AddViewGroup('List', viewMode='List', mediaType='items')
-
-	MediaContainer.art = R(ART)
-	MediaContainer.title1 = NAME
-	MediaContainer.viewGroup = 'InfoList'
-	DirectoryItem.thumb = R(ICON)
-	VideoItem.thumb = R(ICON)
+    ObjectContainer.art = R(ART)
+	ObjectContainer.title1 = NAME
+	DirectoryObject.thumb = R(ICON)
 
 	HTTP.CacheTime = CACHE_1HOUR
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.16) Gecko/20110319 Firefox/3.6.16'
