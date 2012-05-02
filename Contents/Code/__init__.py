@@ -87,11 +87,11 @@ def Shows(title, category):
 	return oc
 
 ####################################################################################################
-def EpisodesAndClips(sender, title, display_title):
-	dir = MediaContainer(viewGroup='List', title2=sender.itemTitle)
-	dir.Append(Function(DirectoryItem(Videos, title='Full Episodes'), full_episodes='true', title=title, display_title=display_title))
-	dir.Append(Function(DirectoryItem(Videos, title='Clips'), full_episodes='false', title=title, display_title=display_title))
-	return dir
+def EpisodesAndClips(title, display_title):
+	oc = ObjectContainer(title2=display_title)
+    oc.add(DirectoryObject(key=Callback(Videos, full_episodes='true', title=title, display_title=display_title), title='Full Episodes'))
+    oc.add(DirectoryObject(key=Callback(Videos, full_episodes='false', title=title, display_title=display_title), title='Clips'))
+	return oc
 
 ####################################################################################################
 def Videos(sender, full_episodes, title, display_title):
