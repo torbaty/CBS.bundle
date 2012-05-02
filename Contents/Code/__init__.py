@@ -12,7 +12,9 @@ SERVERS = ['CBS%20Production%20Delivery%20h264%20Akamai',
            'CBS%20Production%20Entertainment%20Delivery%20Akamai%20Flash',
            'CBS%20Production%20Entertainment%20Delivery%20Akamai%20Flash%20Progressive',
            'CBS%20Delivery%20Akamai%20Flash']
-
+CATEGORIES = [{"title":"Primetime","label":"primetime"},{"title":"Daytime","label":"daytime"},
+                {"title":"Late Night","label":"latenight"},{"title":"Classics","label":"classics"},
+                {"title":"Specials","label":"specials"},{"title":"Web Originals","label":"originals"}]
 ####################################################################################################
 def Start():
 	Plugin.AddPrefixHandler('/video/cbs', MainMenu, NAME, ICON, ART)
@@ -26,14 +28,10 @@ def Start():
 
 ####################################################################################################
 def MainMenu():
-	dir = MediaContainer(viewGroup='List')
-	dir.Append(Function(DirectoryItem(Shows, title='Primetime'), category='primetime'))
-	dir.Append(Function(DirectoryItem(Shows, title='Daytime'), category='daytime'))
-	dir.Append(Function(DirectoryItem(Shows, title='Late Night'), category='latenight'))
-	dir.Append(Function(DirectoryItem(Shows, title='Classics'), category='classics'))
-	dir.Append(Function(DirectoryItem(Shows, title='Specials'), category='specials'))
-	dir.Append(PrefsItem(title='Preferences...', thumb=R('icon-prefs.png')))
-	return dir
+	oc = ObjectContainer()
+    for category in CATEGORIES:
+        oc.add(DirectoryObject(key=Callback(Shows, category=category['label']), title=category['title']))
+	return oc
 
 ####################################################################################################
 def Shows(sender, category):
