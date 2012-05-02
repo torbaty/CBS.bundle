@@ -5,7 +5,7 @@ ART  = 'art-default.jpg'
 ICON = 'icon-default.png'
 
 CBS_LIST = 'http://www.cbs.com/video/'
-SHOWNAME_LIST = 'http://cbs.feeds.theplatform.com/ps/JSON/PortalService/1.6/getReleaseList?PID=GIIJWbEj_zj6weINzALPyoHte4KLYNmp&startIndex=1&endIndex=500%s&query=contentCustomBoolean|EpisodeFlag|%s&query=CustomBoolean|IsLowFLVRelease|false&query=contentCustomText|SeriesTitle|%s&query=servers|%s&sortField=airdate&sortDescending=true&field=airdate&field=author&field=description&field=length&field=PID&field=thumbnailURL&field=title&field=encodingProfile&contentCustomField=label'
+SHOWNAME_LIST = 'http://cbs.feeds.theplatform.com/ps/JSON/PortalService/1.6/getReleaseList?PID=GIIJWbEj_zj6weINzALPyoHte4KLYNmp&startIndex=1&endIndex=500%s&query=contentCustomBoolean|EpisodeFlag|%s&query=CustomBoolean|IsLowFLVRelease|false&query=contentCustomText|SeriesTitle|%s&query=servers|%s&sortField=airdate&sortDescending=true&field=airdate&field=author&field=description&field=length&field=PID&field=thumbnailURL&field=title&field=encodingProfile&contentCustomField=label&field=URL'
 CBS_SMIL = 'http://release.theplatform.com/content.select?format=SMIL&Tracking=true&balance=true&pid=%s'
 SERVERS = ['CBS%20Production%20Delivery%20h264%20Akamai',
            'CBS%20Production%20News%20Delivery%20Akamai%20Flash',
@@ -94,14 +94,9 @@ def EpisodesAndClips(title, display_title):
 	return oc
 
 ####################################################################################################
-def Videos(sender, full_episodes, title, display_title):
-	dir = MediaContainer(title2=display_title)
+def OlderVideos(full_episodes, title, display_title):
+	oc = ObjectContainer(title2=display_title)
 	processed_titles = []
-
-	if Prefs['hd']:
-		hd = ''
-	else:
-		hd = '&query=CustomBoolean|IsHDRelease|false'
 
 	for server in SERVERS:
 		url = SHOWNAME_LIST % (hd, full_episodes, title, server)
@@ -124,12 +119,19 @@ def Videos(sender, full_episodes, title, display_title):
 
 					video_title = title + str(encoding)
 					pid = item['PID']
+                    smil = item['URL']
 					summary = item['description'].replace('In Full:', '')
 					duration = item['length']
 					thumb = item['thumbnailURL']
 					airdate = int(item['airdate'])/1000
-					subtitle = 'Originally Aired: ' + datetime.datetime.fromtimestamp(airdate).strftime('%a %b %d, %Y')
-					dir.Append(Function(VideoItem(PlayVideo, title=video_title, subtitle=subtitle, summary=summary, thumb=Function(GetThumb, url=thumb), duration=duration), pid=pid))
+                    originally_available_at = Datetime.FromTimestamp(airdate).date()
+                    
+                    if full_episodes == "true":
+                        oc.add(EpisodeObject(url=smil, show=display_title, title=video_title, summary=summary, duration=duration,
+                            originally_available_at=originally_available_at, thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
+                    else:
+                        oc.add(VideoClipObject(url=smil, title=video_title, summary=summary, duration=duration,
+                            originally_available_at=originally_available_at, thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
 
 					processed_titles.append(title)
 
@@ -138,10 +140,10 @@ def Videos(sender, full_episodes, title, display_title):
 			Log(' --> Failed!')
 			pass
 
-	if len(dir) == 0:
-		return MessageContainer('Empty', "There aren't any items")
+	if len(oc) == 0:
+		return ObjectContainer(header='Empty', message="There aren't any items")
 	else:
-		return dir
+		return oc
 
 ####################################################################################################
 def PlayVideo(sender, pid):
@@ -165,3 +167,4 @@ def GetThumb(url):
 		return DataObject(data, 'image/jpeg')
 	except:
 		return Redirect(R(ICON))
+
