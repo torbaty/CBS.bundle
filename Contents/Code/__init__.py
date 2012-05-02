@@ -5,7 +5,7 @@ ART  = 'art-default.jpg'
 ICON = 'icon-default.png'
 
 CBS_LIST = 'http://www.cbs.com/video/'
-SHOWNAME_LIST = 'http://cbs.feeds.theplatform.com/ps/JSON/PortalService/1.6/getReleaseList?PID=GIIJWbEj_zj6weINzALPyoHte4KLYNmp&startIndex=1&endIndex=500%s&query=contentCustomBoolean|EpisodeFlag|%s&query=CustomBoolean|IsLowFLVRelease|false&query=contentCustomText|SeriesTitle|%s&query=servers|%s&sortField=airdate&sortDescending=true&field=airdate&field=author&field=description&field=length&field=PID&field=thumbnailURL&field=title&field=encodingProfile&contentCustomField=label&field=URL'
+SHOWNAME_LIST = 'http://cbs.feeds.theplatform.com/ps/JSON/PortalService/1.6/getReleaseList?PID=GIIJWbEj_zj6weINzALPyoHte4KLYNmp&startIndex=1&endIndex=500%s&query=contentCustomBoolean|EpisodeFlag|%s&query=CustomBoolean|IsLowFLVRelease|false&query=contentCustomText|SeriesTitle|%s&query=servers|%s&sortField=airdate&sortDescending=true&field=airdate&field=author&field=description&field=length&field=PID&field=thumbnailURL&field=title&field=encodingProfile&contentCustomField=label'
 CBS_SMIL = 'http://release.theplatform.com/content.select?format=SMIL&Tracking=true&balance=true&pid=%s'
 SERVERS = ['CBS%20Production%20Delivery%20h264%20Akamai',
            'CBS%20Production%20News%20Delivery%20Akamai%20Flash',
@@ -16,8 +16,6 @@ CATEGORIES = [{"title":"Primetime","label":"primetime"},{"title":"Daytime","labe
                 {"title":"Late Night","label":"latenight"},{"title":"Classics","label":"classics"},
                 {"title":"Specials","label":"specials"},{"title":"Web Originals","label":"originals"}]
                 
-HIDDEN_CLASSICS = [{"title":"The%20Three%20Stooges%20Show", "display_title":"*The Three Stooges"},
-                    {"title":"Robotech", "display_title":"Robotech"}]
 ####################################################################################################
 def Start():
 	Plugin.AddPrefixHandler('/video/cbs', MainMenu, NAME, ICON, ART)
@@ -40,9 +38,10 @@ def MainMenu():
 def Shows(title, category):
 	oc = ObjectContainer(title2=title)
 
-	for item in HTML.ElementFromURL(CBS_LIST).xpath('//div[@id="' + category + '"]//span'):
-		title = item.xpath('./..//img')[0].get('alt')
+	for item in HTML.ElementFromURL(CBS_LIST).xpath('//div[@id="' + category + '"]//div[@id="show_block_interior"]'):
+		title = item.xpath('.//img')[0].get('alt')
 		display_title = title
+        url = item.xpath('.//a')[0].get('href')
 
 		### Naming differences
 		if title == 'Late Show With David Letterman':
@@ -78,23 +77,19 @@ def Shows(title, category):
 
 		title = title.replace(' ', '%20').replace('&', '%26').replace("'", '')
 
-		oc.add(DirectoryObject(key=Callback(EpisodesAndClips, title=title, display_title=display_title), title=display_title))
-
-	if category == 'classics': ### THESE ARE HIDDEN FEEDS (MIGHT NEED TO CREATE A SEPARATE CATEGORY SOON)
-        for show in HIDDEN_CLASSICS:
-            oc.add(DirectoryObject(key=Callback(EpisodesAndClips, title=show['title'], display_title=show['display_title']), title=show['display_title']))
+		oc.add(DirectoryObject(key=Callback(EpisodesAndClips, title=title, display_title=display_title, url=url), title=display_title))
 
 	return oc
 
 ####################################################################################################
-def EpisodesAndClips(title, display_title):
+def EpisodesAndClips(title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
-    oc.add(DirectoryObject(key=Callback(Videos, full_episodes='true', title=title, display_title=display_title), title='Full Episodes'))
-    oc.add(DirectoryObject(key=Callback(Videos, full_episodes='false', title=title, display_title=display_title), title='Clips'))
+    oc.add(DirectoryObject(key=Callback(Videos, full_episodes='true', title=title, display_title=display_title, url=url), title='Full Episodes'))
+    oc.add(DirectoryObject(key=Callback(Videos, full_episodes='false', title=title, display_title=display_title, url=url), title='Clips'))
 	return oc
 
 ####################################################################################################
-def OlderVideos(full_episodes, title, display_title):
+def OlderVideos(full_episodes, title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
 	processed_titles = []
 
@@ -119,7 +114,6 @@ def OlderVideos(full_episodes, title, display_title):
 
 					video_title = title + str(encoding)
 					pid = item['PID']
-                    smil = item['URL']
 					summary = item['description'].replace('In Full:', '')
 					duration = item['length']
 					thumb = item['thumbnailURL']
