@@ -15,7 +15,12 @@ SERVERS = ['CBS%20Production%20Delivery%20h264%20Akamai',
 CATEGORIES = [{"title":"Primetime","label":"primetime"},{"title":"Daytime","label":"daytime"},
                 {"title":"Late Night","label":"latenight"},{"title":"Classics","label":"classics"},
                 {"title":"Specials","label":"specials"},{"title":"Web Originals","label":"originals"}]
-                
+
+CAROUSEL_URL = 'http://www.cbs.com/carousels/%s/video/%s/%s/0/100/'
+
+RE_FULL_EPS = Regex("loadUpCarousel\('Full Episodes','(?P<server>0_video_(main|small))', '(?P<hash>.+?)', (?P<show_id>[0-9]+), .+?\);", Regex.DOTALL)
+RE_CLIPS = Regex("loadUpCarousel\('Newest Clips','(?P<server>0_video_(main|small))', '(?P<hash>.+?)', (?P<show_id>[0-9]+), .+?\);", Regex.DOTALL)
+
 ####################################################################################################
 def Start():
 	Plugin.AddPrefixHandler('/video/cbs', MainMenu, NAME, ICON, ART)
@@ -89,6 +94,44 @@ def EpisodesAndClips(title, display_title, url):
 	return oc
 
 ####################################################################################################
+def Videos(full_episodes, title, display_title, url):
+    oc = ObjectContainer(title2=display_title)
+    page = HTTP.Request(url).content
+    if full_episodes == 'true':
+        request_params = RE_FULL_EPS.search(page)
+        episode_list = JSON.ObjectFromURL(CAROUSEL_URL % (request_params('show_id'), request_params('server'), request_params('hash')))
+        for episode in episode_list:
+            video_title = episode['title']
+            date = Datetime.FromTimestamp(episode['airDate']).date()
+            summary = episode['description']
+            video_url = episode['url']
+            index = int(episode['episodeNum'])
+            season = int(episode['seasonNum'])
+            show = episode['seriesTitle']
+            duration = int(episode['duration'])*1000
+            content_rating = episode['rating']
+            thumbs = SortImages(episode['thumbnailSet'])
+            oc.add(EpisodeObject(url=video_url, title=video_title, show=show, index=index, season=season, summary=summary, duration=duration,
+                originally_available_at=date, content_rating=content_rating, thumb=Resource.ContentsOfURLWithFallback(url=thumbs, fallback=ICON)))
+                
+        oc.add(DirectoryObject(key=Callback(OlderVideos, full_episodes, title, display_title, url), title="Older Episodes"))
+    else:
+        request_params = RE_CLIPS.search(page)
+        clip_list = JSON.ObjectFromURL(CAROUSEL_URL % (request_params('show_id'), request_params('server'), request_params('hash')))
+        for clip in clip_list:
+            video_title = clip['title']
+            date = Datetime.FromTimestamp(clip['pubDate']).date()
+            summary = clip['description']
+            video_url = clip['url']
+            duration = int(episode['duration'])*1000
+            thumbs = SortImages(episode['thumbnailSet'])
+            oc.add(VideoClipObject(url=video_url, title=video_title, summary=summary, duration=duration, originally_available_at=date,
+                thumb=Resource.ContentsOfURLWithFallback(url=thumbs, fallback=ICON)))
+    
+        oc.add(DirectoryObject(key=Callback(OlderVideos, full_episodes, title, display_title, url), title="Older clips"))
+        
+    return oc
+####################################################################################################
 def OlderVideos(full_episodes, title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
 	processed_titles = []
@@ -141,3 +184,11 @@ def OlderVideos(full_episodes, title, display_title, url):
 		return oc
 
 ####################################################################################################
+def SortImages(images=[]):
+
+  sorted_thumbs = sorted(thumbs, key=lambda thumb : int(thumb['height']), reverse=True)
+  thumb_list = []
+  for thumb in sorted_thumbs:
+      thumb_list.append(thumb['url'])
+
+  return thumb_list
