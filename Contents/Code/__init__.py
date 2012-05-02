@@ -15,6 +15,9 @@ SERVERS = ['CBS%20Production%20Delivery%20h264%20Akamai',
 CATEGORIES = [{"title":"Primetime","label":"primetime"},{"title":"Daytime","label":"daytime"},
                 {"title":"Late Night","label":"latenight"},{"title":"Classics","label":"classics"},
                 {"title":"Specials","label":"specials"},{"title":"Web Originals","label":"originals"}]
+                
+HIDDEN_CLASSICS = [{"title":"The%20Three%20Stooges%20Show", "display_title":"*The Three Stooges"},
+                    {"title":"Robotech", "display_title":"Robotech"}]
 ####################################################################################################
 def Start():
 	Plugin.AddPrefixHandler('/video/cbs', MainMenu, NAME, ICON, ART)
@@ -30,12 +33,12 @@ def Start():
 def MainMenu():
 	oc = ObjectContainer()
     for category in CATEGORIES:
-        oc.add(DirectoryObject(key=Callback(Shows, category=category['label']), title=category['title']))
+        oc.add(DirectoryObject(key=Callback(Shows, title=category['title'], category=category['label']), title=category['title']))
 	return oc
 
 ####################################################################################################
-def Shows(sender, category):
-	dir = MediaContainer(viewGroup='List', title2=sender.itemTitle)
+def Shows(title, category):
+	oc = ObjectContainer(title2=title)
 
 	for item in HTML.ElementFromURL(CBS_LIST).xpath('//div[@id="' + category + '"]//span'):
 		title = item.xpath('./..//img')[0].get('alt')
@@ -75,13 +78,13 @@ def Shows(sender, category):
 
 		title = title.replace(' ', '%20').replace('&', '%26').replace("'", '')
 
-		dir.Append(Function(DirectoryItem(EpisodesAndClips, title=display_title), title=title, display_title=display_title))
+		oc.add(DirectoryObject(key=Callback(EpisodesAndClips, title=title, display_title=display_title), title=display_title))
 
 	if category == 'classics': ### THESE ARE HIDDEN FEEDS (MIGHT NEED TO CREATE A SEPARATE CATEGORY SOON)
-		dir.Append(Function(DirectoryItem(EpisodesAndClips, title='*The Three Stooges'), title='The%20Three%20Stooges%20Show', display_title='The Three Stooges'))
-		dir.Append(Function(DirectoryItem(EpisodesAndClips, title='*Robotech'), title='Robotech', display_title='Robotech'))
+        for show in HIDDEN_CLASSICS:
+            oc.add(DirectoryObject(key=Callback(EpisodesAndClips, title=show['title'], display_title=show['display_title']), title=show['display_title']))
 
-	return dir
+	return oc
 
 ####################################################################################################
 def EpisodesAndClips(sender, title, display_title):
