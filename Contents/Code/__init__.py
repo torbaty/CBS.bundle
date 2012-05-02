@@ -114,6 +114,7 @@ def OlderVideos(full_episodes, title, display_title, url):
 
 					video_title = title + str(encoding)
 					pid = item['PID']
+                    video_url = url + '?play=true&pid=' + pid
 					summary = item['description'].replace('In Full:', '')
 					duration = item['length']
 					thumb = item['thumbnailURL']
@@ -121,10 +122,10 @@ def OlderVideos(full_episodes, title, display_title, url):
                     originally_available_at = Datetime.FromTimestamp(airdate).date()
                     
                     if full_episodes == "true":
-                        oc.add(EpisodeObject(url=smil, show=display_title, title=video_title, summary=summary, duration=duration,
+                        oc.add(EpisodeObject(url=video_url, show=display_title, title=video_title, summary=summary, duration=duration,
                             originally_available_at=originally_available_at, thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
                     else:
-                        oc.add(VideoClipObject(url=smil, title=video_title, summary=summary, duration=duration,
+                        oc.add(VideoClipObject(url=video_url, title=video_title, summary=summary, duration=duration,
                             originally_available_at=originally_available_at, thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
 
 					processed_titles.append(title)
@@ -140,25 +141,3 @@ def OlderVideos(full_episodes, title, display_title, url):
 		return oc
 
 ####################################################################################################
-def PlayVideo(sender, pid):
-	smil = HTTP.Request(CBS_SMIL % pid).content
-	player = smil.split('ref src')
-	player = player[2].split('"')
-	if '.mp4' in player[1]:
-		player = player[1].replace('.mp4', '')
-		clip = player.split(';')
-		clip = 'mp4:' + clip[4]
-	else:
-		player = player[1].replace('.flv', '')
-		clip = player.split(';')
-		clip = clip[4]
-	return Redirect(RTMPVideoItem(player, clip))
-
-####################################################################################################
-def GetThumb(url):
-	try:
-		data = HTTP.Request(url, cacheTime=CACHE_1MONTH).content
-		return DataObject(data, 'image/jpeg')
-	except:
-		return Redirect(R(ICON))
-
