@@ -130,7 +130,10 @@ def Videos(full_episodes, title, display_title, url):
 						pass
                 else:
 			pass
-		oc.add(DirectoryObject(key=Callback(OlderVideos, full_episodes=full_episodes, title=title, display_title=display_title, url=url), title="Older Episodes"))
+		if len(oc) == 0:
+			return OlderVideos(full_episodes=full_episodes, title=title, display_title=display_title, url=url)
+		else:
+			oc.add(DirectoryObject(key=Callback(OlderVideos, full_episodes=full_episodes, title=title, display_title=display_title, url=url), title="Older Episodes"))
 	else:
 		request_params = RE_CLIPS.findall(page)
 		Log(request_params)
@@ -145,39 +148,41 @@ def Videos(full_episodes, title, display_title, url):
 					date = Datetime.FromTimestamp(int(clip['pubDate'])/1000).date()
 					summary = clip['description']
 					video_url = clip['url']
-					duration = int(episode['duration'])*1000
-					thumbs = SortImages(episode['thumbnailSet'])
+					duration = int(clip['duration'])*1000
+					thumbs = SortImages(clip['thumbnailSet'])
 					oc.add(VideoClipObject(url=video_url, title=video_title, summary=summary, duration=duration, originally_available_at=date,
 						thumb=Resource.ContentsOfURLWithFallback(url=thumbs, fallback=ICON)))
 		else:
 			pass
-		oc.add(DirectoryObject(key=Callback(OlderVideos, full_episodes=full_episodes, title=title, display_title=display_title, url=url), title="Older clips"))
+		if len(oc) == 0:
+			return OlderVideos(full_episodes=full_episodes, title=title, display_title=display_title, url=url)
+		else:
+			oc.add(DirectoryObject(key=Callback(OlderVideos, full_episodes=full_episodes, title=title, display_title=display_title, url=url), title="Older clips"))
         
 	return oc
 ####################################################################################################
 def OlderVideos(full_episodes, title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
+	show_title = title
 	processed_titles = []
-
+	
 	for server in SERVERS:
-		url = SHOWNAME_LIST % (full_episodes, title, server)
+		feed_url = SHOWNAME_LIST % (full_episodes, show_title, server)
 		Log(' --> Checking server: ' + server)
 		Log(' --> URL: ' + url)
 
 		try:
-			feeds = JSON.ObjectFromURL(url)
+			feeds = JSON.ObjectFromURL(feed_url)
 			encoding = ''
 
 			for item in feeds['items']:
 				title = item['contentCustomData'][0]['value']
 
 				if title not in processed_titles:
-					if hd == '':
-						if "HD" in item['encodingProfile']:
-							encoding = " - HD " + item['encodingProfile'][3:8].replace(' ', '')
-						else:
-							encoding = ''
-
+					if "HD" in item['encodingProfile']:
+						encoding = " - HD " + item['encodingProfile'][3:8].replace(' ', '')
+					else:
+						encoding = ''
 					video_title = title + str(encoding)
 					pid = item['PID']
 					video_url = url + '?play=true&pid=' + pid
