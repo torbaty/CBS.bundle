@@ -5,6 +5,10 @@ ART  = 'art-default.jpg'
 ICON = 'icon-default.png'
 
 CBS_LIST = 'http://www.cbs.com/video/'
+
+API_URL = "http://api.cnet.com/restApi/v1.0/videoSearch?categoryIds=%s&orderBy=productionDate~desc,createDate~desc&limit=20&iod=images,videoMedia,relatedLink,breadcrumb,relatedAssets,broadcast,lowcache&partTag=cntv&showBroadcast=true"
+API_NAMESPACE  = {'l':'http://api.cnet.com/rest/v1.0/ns'}
+
 SHOWNAME_LIST = 'http://cbs.feeds.theplatform.com/ps/JSON/PortalService/1.6/getReleaseList?PID=GIIJWbEj_zj6weINzALPyoHte4KLYNmp&startIndex=1&endIndex=500&query=contentCustomBoolean|EpisodeFlag|%s&query=CustomBoolean|IsLowFLVRelease|false&query=contentCustomText|SeriesTitle|%s&query=servers|%s&sortField=airdate&sortDescending=true&field=airdate&field=author&field=description&field=length&field=PID&field=thumbnailURL&field=title&field=encodingProfile&contentCustomField=label'
 CBS_SMIL = 'http://release.theplatform.com/content.select?format=SMIL&Tracking=true&balance=true&pid=%s'
 SERVERS = ['CBS%20Production%20Delivery%20h264%20Akamai',
@@ -17,6 +21,9 @@ CATEGORIES = [{"title":"Primetime","label":"primetime"},{"title":"Daytime","labe
                 {"title":"Specials","label":"specials"},{"title":"Web Originals","label":"originals"}]
 
 CAROUSEL_URL = 'http://www.cbs.com/carousels/%s/video/%s/%s/0/100/'
+
+API_TITLES = ["48 Hours Mystery"]
+API_IDS = {"48 Hours Mystery":{"episodes":"503443", "clips":"18559"}}
 
 RE_FULL_EPS = Regex("\.loadUpCarousel\('Full Episodes','(0_video_.+?)', '(.+?)', ([0-9]+), .+?\);", Regex.DOTALL|Regex.IGNORECASE)
 RE_CLIPS = Regex("loadUpCarousel\('Newest Clips','(0_video_.+?)', '(.+?)', ([0-9]+), .+?\);", Regex.DOTALL)
@@ -91,8 +98,13 @@ def Shows(title, category):
 ####################################################################################################
 def EpisodesAndClips(title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
-	oc.add(DirectoryObject(key=Callback(Videos, full_episodes='true', title=title, display_title=display_title, url=url), title='Full Episodes'))
-	oc.add(DirectoryObject(key=Callback(Videos, full_episodes='false', title=title, display_title=display_title, url=url), title='Clips'))
+	Log(display_title)
+	if display_title not in API_TITLES:
+		oc.add(DirectoryObject(key=Callback(Videos, full_episodes='true', title=title, display_title=display_title, url=url), title='Full Episodes'))
+		oc.add(DirectoryObject(key=Callback(Videos, full_episodes='false', title=title, display_title=display_title, url=url), title='Clips'))
+	else:
+		oc.add(DirectoryObject(key=Callback(APIVideos, full_episodes='true', title=title, display_title=display_title, url=url), title='Full Episodes'))
+		oc.add(DirectoryObject(key=Callback(APIVideos, full_episodes='false', title=title, display_title=display_title, url=url), title='Clips'))
 	return oc
 
 ####################################################################################################
@@ -102,7 +114,6 @@ def Videos(full_episodes, title, display_title, url):
 	if full_episodes == 'true':
 		episodes = []
 		request_params = RE_FULL_EPS.findall(page)
-		Log(request_params)
 		if request_params != None:
 			for i in range(len(request_params)):
 				show_id = request_params[i][2]
@@ -136,7 +147,6 @@ def Videos(full_episodes, title, display_title, url):
 			oc.add(DirectoryObject(key=Callback(OlderVideos, full_episodes=full_episodes, title=title, display_title=display_title, url=url), title="Older Episodes"))
 	else:
 		request_params = RE_CLIPS.findall(page)
-		Log(request_params)
 		if request_params != None:
 			for i in range(len(request_params)):
 				show_id = request_params[i][2]
@@ -212,9 +222,61 @@ def OlderVideos(full_episodes, title, display_title, url):
 		return oc
 
 ####################################################################################################
+def APIVideos(full_episodes, title, display_title, url):
+	oc = ObjectContainer(title2=display_title)
+
+	if full_episodes == 'true':
+		data = XML.ElementFromURL(API_URL % API_IDS[display_title]['episodes'])
+		for episode in data.xpath('//l:Video', namespaces=API_NAMESPACE):
+			video_url = episode.xpath('.//l:CBSURL', namespaces=API_NAMESPACE)[0].text
+			title = episode.xpath('.//l:Title', namespaces=API_NAMESPACE)[0].text
+			date = Datetime.ParseDate(episode.xpath('.//l:ProductionDate', namespaces=API_NAMESPACE)[0].text).date()
+			summary = episode.xpath('.//l:Description', namespaces=API_NAMESPACE)[0].text
+			duration = int(episode.xpath('.//l:LengthSecs', namespaces=API_NAMESPACE)[0].text)*1000
+			images = episode.xpath('.//l:Images/l:Image', namespaces=API_NAMESPACE)
+			thumbs = SortImagesFromAPI(images)
+			show = display_title
+			rating = episode.xpath('.//l:ContentRatingOverall', namespaces=API_NAMESPACE)[0].text
+			season = int(episode.xpath('.//l:SeasonNumber', namespaces=API_NAMESPACE)[0].text)
+			index = int(episode.xpath('.//l:EpisodeNumber', namespaces=API_NAMESPACE)[0].text)
+			
+			oc.add(EpisodeObject(url=video_url, title=title, show=show, summary=summary, originally_available_at=date, duration=duration,
+				content_rating=rating, season=season, index=index, thumb=Resource.ContentsOfURLWithFallback(url=thumbs, fallback='icon-default.png')))
+	else:
+		data = XML.ElementFromURL(API_URL % API_IDS[display_title]['clips'])
+		for clip in data.xpath('//l:Video', namespaces=API_NAMESPACE):
+			video_url = clip.xpath('.//l:CBSURL', namespaces=API_NAMESPACE)[0].text
+			title = clip.xpath('.//l:Title', namespaces=API_NAMESPACE)[0].text
+			date = Datetime.ParseDate(clip.xpath('.//l:ProductionDate', namespaces=API_NAMESPACE)[0].text).date()
+			summary = clip.xpath('.//l:Description', namespaces=API_NAMESPACE)[0].text
+			duration = int(clip.xpath('.//l:LengthSecs', namespaces=API_NAMESPACE)[0].text)*1000
+			images = clip.xpath('.//l:Images/l:Image', namespaces=API_NAMESPACE)
+			thumbs = SortImagesFromAPI(images)
+    
+			oc.add(VideoClipObject(url=video_url, title=title, originally_available_at=date, duration=duration,summary = summary,
+				thumb = Resource.ContentsOfURLWithFallback(url=thumbs, fallback='icon-default.png')))
+			
+	return oc
+####################################################################################################
 def SortImages(images=[]):
 
   sorted_thumbs = sorted(images, key=lambda thumb : int(thumb['height']), reverse=True)
+  thumb_list = []
+  for thumb in sorted_thumbs:
+      thumb_list.append(thumb['url'])
+
+  return thumb_list
+
+####################################################################################################
+def SortImagesFromAPI(images=[]):
+  
+  thumbs = []
+  for image in images:
+      height = image.get('height')
+      url = image.xpath('./l:ImageURL', namespaces=API_NAMESPACE)[0].text
+      thumbs.append({'height':height, 'url':url})
+
+  sorted_thumbs = sorted(thumbs, key=lambda thumb : int(thumb['height']), reverse=True)
   thumb_list = []
   for thumb in sorted_thumbs:
       thumb_list.append(thumb['url'])
