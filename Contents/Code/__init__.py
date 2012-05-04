@@ -54,8 +54,15 @@ def Shows(title, category):
 		title = item.xpath('.//img')[0].get('alt')
 		display_title = title
 		url = item.xpath('.//a')[0].get('href')
+		Log(url)
+		Log(title)
 		if 'http://www.cbs.com/' not in url:
 			url = 'http://www.cbs.com' + url
+			
+		if '/nyc_22/' in url:#For some reason the CBS site has "Person of Interest" listed as the 'alt' for the "NYC 22" image
+			url = url + 'video/'
+			title = 'NYC 22'
+			display_title= 'NYC 22'
 
 		### Naming differences
 		if title == 'Late Show With David Letterman':
