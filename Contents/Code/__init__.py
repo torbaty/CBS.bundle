@@ -54,8 +54,6 @@ def Shows(title, category):
 		title = item.xpath('.//img')[0].get('alt')
 		display_title = title
 		url = item.xpath('.//a')[0].get('href')
-		Log(url)
-		Log(title)
 		if 'http://www.cbs.com/' not in url:
 			url = 'http://www.cbs.com' + url
 			
