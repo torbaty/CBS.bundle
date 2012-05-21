@@ -4,6 +4,7 @@
 <dict>
 	<key>CFBundleIdentifier</key>
 	<string>com.plexapp.plugins.cbs</string>
+	<!--
 	<key>PlexClientCapabilities</key>
 	<dict>
 		<key>protocols</key>
@@ -11,6 +12,7 @@
 			<string>webkit</string>
 		</array>
 	</dict>
+	-->
 	<key>PlexClientPlatformExclusions</key>
 	<string>Roku</string>
 	<key>PlexClientPlatforms</key>
@@ -19,11 +21,15 @@
 	<string>2</string>
 	<key>PlexMediaContainer</key>
 	<array>
-		<string>Flash</string>
+		<string>MP4</string>
 	</array>
 	<key>PlexPluginRegions</key>
 	<array>
 		<string>US</string>
+	</array>
+	<key>PlexFrameworkFlags</key>
+	<array>
+		<string>UseRealRTMP</string>
 	</array>
 </dict>
 </plist>
