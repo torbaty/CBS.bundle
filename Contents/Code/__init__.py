@@ -103,7 +103,6 @@ def Shows(title, category):
 ####################################################################################################
 def EpisodesAndClips(title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
-	Log(display_title)
 	if display_title not in API_TITLES:
 		oc.add(DirectoryObject(key=Callback(Videos, full_episodes='true', title=title, display_title=display_title, url=url), title='Full Episodes'))
 		oc.add(DirectoryObject(key=Callback(Videos, full_episodes='false', title=title, display_title=display_title, url=url), title='Clips'))
@@ -215,11 +214,18 @@ def OlderVideos(full_episodes, title, display_title, url):
 							originally_available_at=originally_available_at, thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
 
 					processed_titles.append(title)
-
+					
+					if len(oc) > 99:
+						break
+				if len(oc) > 99:
+					break
 			Log(' --> Success! Found ' + str(len(feeds['items'])) + ' items')
+			if len(oc) > 99:
+				break
 		except:
 			Log(' --> Failed!')
 			pass
+		
 
 	if len(oc) == 0:
 		return ObjectContainer(header='Empty', message="There aren't any items")
