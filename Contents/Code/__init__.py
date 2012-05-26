@@ -18,7 +18,7 @@ SERVERS = ['CBS%20Production%20Delivery%20h264%20Akamai',
            'CBS%20Delivery%20Akamai%20Flash']
 CATEGORIES = [{"title":"Primetime","label":"primetime"},{"title":"Daytime","label":"daytime"},
                 {"title":"Late Night","label":"latenight"},{"title":"Classics","label":"classics"},
-                {"title":"Specials","label":"specials"},{"title":"Web Originals","label":"originals"}]
+                {"title":"Specials","label":"specials"}]
 
 CAROUSEL_URL = 'http://www.cbs.com/carousels/%s/video/%s/%s/0/100/'
 
@@ -218,16 +218,18 @@ def OlderVideos(full_episodes, title, display_title, url):
 
 					processed_titles.append(title)
 					
-					if len(oc) > 99:
+					if len(oc) > 49:
 						break
-				if len(oc) > 99:
+				if len(oc) > 49:
 					break
 			Log(' --> Success! Found ' + str(len(feeds['items'])) + ' items')
-			if len(oc) > 99:
+			if len(oc) > 49:
 				break
 		except:
 			Log(' --> Failed!')
 			pass
+		if len(oc) > 49:
+			break
 		
 
 	if len(oc) == 0:
