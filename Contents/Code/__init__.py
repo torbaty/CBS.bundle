@@ -114,7 +114,10 @@ def EpisodesAndClips(title, display_title, url):
 ####################################################################################################
 def Videos(full_episodes, title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
-	page = HTTP.Request(url).content
+	try:
+		page = HTTP.Request(url).content
+	except:
+		return ObjectContainer(header="CBS", message="An error has occurred. No content found.")
 	if full_episodes == 'true':
 		episodes = []
 		request_params = RE_FULL_EPS.findall(page)
