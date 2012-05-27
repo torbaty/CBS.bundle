@@ -9,7 +9,7 @@ CBS_LIST = 'http://www.cbs.com/video/'
 API_URL = "http://api.cnet.com/restApi/v1.0/videoSearch?categoryIds=%s&orderBy=productionDate~desc,createDate~desc&limit=20&iod=images,videoMedia,relatedLink,breadcrumb,relatedAssets,broadcast,lowcache&partTag=cntv&showBroadcast=true"
 API_NAMESPACE  = {'l':'http://api.cnet.com/rest/v1.0/ns'}
 
-SHOWNAME_LIST = 'http://cbs.feeds.theplatform.com/ps/JSON/PortalService/1.6/getReleaseList?PID=GIIJWbEj_zj6weINzALPyoHte4KLYNmp&startIndex=1&endIndex=500&query=contentCustomBoolean|EpisodeFlag|%s&query=CustomBoolean|IsLowFLVRelease|false&query=contentCustomText|SeriesTitle|%s&query=servers|%s&sortField=airdate&sortDescending=true&field=airdate&field=author&field=description&field=length&field=PID&field=thumbnailURL&field=title&field=encodingProfile&contentCustomField=label'
+SHOWNAME_LIST = 'http://cbs.feeds.theplatform.com/ps/JSON/PortalService/1.6/getReleaseList?PID=GIIJWbEj_zj6weINzALPyoHte4KLYNmp&startIndex=1&endIndex=50&query=contentCustomBoolean|EpisodeFlag|%s&query=CustomBoolean|IsLowFLVRelease|false&query=contentCustomText|SeriesTitle|%s&query=servers|%s&sortField=airdate&sortDescending=true&field=airdate&field=author&field=description&field=length&field=PID&field=thumbnailURL&field=title&field=encodingProfile&contentCustomField=label'
 CBS_SMIL = 'http://release.theplatform.com/content.select?format=SMIL&Tracking=true&balance=true&pid=%s'
 SERVERS = ['CBS%20Production%20Delivery%20h264%20Akamai',
            'CBS%20Production%20News%20Delivery%20Akamai%20Flash',
@@ -169,6 +169,10 @@ def Videos(full_episodes, title, display_title, url):
 					thumbs = SortImages(clip['thumbnailSet'])
 					oc.add(VideoClipObject(url=video_url, title=video_title, summary=summary, duration=duration, originally_available_at=date,
 						thumb=Resource.ContentsOfURLWithFallback(url=thumbs, fallback=ICON)))
+					if len(oc) > 24:
+						break
+				if len(oc) > 24:
+						break
 		else:
 			pass
 		if len(oc) == 0:
