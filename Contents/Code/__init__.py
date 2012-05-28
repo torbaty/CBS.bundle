@@ -9,7 +9,7 @@ CBS_LIST = 'http://www.cbs.com/video/'
 API_URL = "http://api.cnet.com/restApi/v1.0/videoSearch?categoryIds=%s&orderBy=productionDate~desc,createDate~desc&limit=20&iod=images,videoMedia,relatedLink,breadcrumb,relatedAssets,broadcast,lowcache&partTag=cntv&showBroadcast=true"
 API_NAMESPACE  = {'l':'http://api.cnet.com/rest/v1.0/ns'}
 
-SHOWNAME_LIST = 'http://cbs.feeds.theplatform.com/ps/JSON/PortalService/1.6/getReleaseList?PID=GIIJWbEj_zj6weINzALPyoHte4KLYNmp&startIndex=1&endIndex=500&query=contentCustomBoolean|EpisodeFlag|%s&query=CustomBoolean|IsLowFLVRelease|false&query=contentCustomText|SeriesTitle|%s&query=servers|%s&sortField=airdate&sortDescending=true&field=airdate&field=author&field=description&field=length&field=PID&field=thumbnailURL&field=title&field=encodingProfile&contentCustomField=label'
+SHOWNAME_LIST = 'http://cbs.feeds.theplatform.com/ps/JSON/PortalService/1.6/getReleaseList?PID=GIIJWbEj_zj6weINzALPyoHte4KLYNmp&startIndex=1&endIndex=50&query=contentCustomBoolean|EpisodeFlag|%s&query=CustomBoolean|IsLowFLVRelease|false&query=contentCustomText|SeriesTitle|%s&query=servers|%s&sortField=airdate&sortDescending=true&field=airdate&field=author&field=description&field=length&field=PID&field=thumbnailURL&field=title&field=encodingProfile&contentCustomField=label'
 CBS_SMIL = 'http://release.theplatform.com/content.select?format=SMIL&Tracking=true&balance=true&pid=%s'
 SERVERS = ['CBS%20Production%20Delivery%20h264%20Akamai',
            'CBS%20Production%20News%20Delivery%20Akamai%20Flash',
@@ -18,7 +18,7 @@ SERVERS = ['CBS%20Production%20Delivery%20h264%20Akamai',
            'CBS%20Delivery%20Akamai%20Flash']
 CATEGORIES = [{"title":"Primetime","label":"primetime"},{"title":"Daytime","label":"daytime"},
                 {"title":"Late Night","label":"latenight"},{"title":"Classics","label":"classics"},
-                {"title":"Specials","label":"specials"},{"title":"Web Originals","label":"originals"}]
+                {"title":"Specials","label":"specials"}]
 
 CAROUSEL_URL = 'http://www.cbs.com/carousels/%s/video/%s/%s/0/100/'
 
@@ -103,7 +103,6 @@ def Shows(title, category):
 ####################################################################################################
 def EpisodesAndClips(title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
-	Log(display_title)
 	if display_title not in API_TITLES:
 		oc.add(DirectoryObject(key=Callback(Videos, full_episodes='true', title=title, display_title=display_title, url=url), title='Full Episodes'))
 		oc.add(DirectoryObject(key=Callback(Videos, full_episodes='false', title=title, display_title=display_title, url=url), title='Clips'))
@@ -115,7 +114,10 @@ def EpisodesAndClips(title, display_title, url):
 ####################################################################################################
 def Videos(full_episodes, title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
-	page = HTTP.Request(url).content
+	try:
+		page = HTTP.Request(url).content
+	except:
+		return ObjectContainer(header="CBS", message="An error has occurred. No content found.")
 	if full_episodes == 'true':
 		episodes = []
 		request_params = RE_FULL_EPS.findall(page)
@@ -167,6 +169,10 @@ def Videos(full_episodes, title, display_title, url):
 					thumbs = SortImages(clip['thumbnailSet'])
 					oc.add(VideoClipObject(url=video_url, title=video_title, summary=summary, duration=duration, originally_available_at=date,
 						thumb=Resource.ContentsOfURLWithFallback(url=thumbs, fallback=ICON)))
+					if len(oc) > 24:
+						break
+				if len(oc) > 24:
+						break
 		else:
 			pass
 		if len(oc) == 0:
@@ -215,11 +221,20 @@ def OlderVideos(full_episodes, title, display_title, url):
 							originally_available_at=originally_available_at, thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
 
 					processed_titles.append(title)
-
+					
+					if len(oc) > 49:
+						break
+				if len(oc) > 49:
+					break
 			Log(' --> Success! Found ' + str(len(feeds['items'])) + ' items')
+			if len(oc) > 49:
+				break
 		except:
 			Log(' --> Failed!')
 			pass
+		if len(oc) > 49:
+			break
+		
 
 	if len(oc) == 0:
 		return ObjectContainer(header='Empty', message="There aren't any items")
