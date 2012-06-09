@@ -162,8 +162,10 @@ def Videos(full_episodes, title, display_title, url):
 				clip_list = JSON.ObjectFromURL(CAROUSEL_URL % (show_id, server, hash))
 				for clip in clip_list['itemList']:
 					video_title = clip['title']
-					date = Datetime.FromTimestamp(int(clip['pubDate'])/1000).date()
 					summary = clip['description']
+					if video_title == '':
+						video_title = summary
+					date = Datetime.FromTimestamp(int(clip['pubDate'])/1000).date()
 					video_url = clip['url']
 					duration = int(clip['duration'])*1000
 					thumbs = SortImages(clip['thumbnailSet'])
@@ -212,11 +214,13 @@ def OlderVideos(full_episodes, title, display_title, url):
 					thumb = item['thumbnailURL']
 					airdate = int(item['airdate'])/1000
 					originally_available_at = Datetime.FromTimestamp(airdate).date()
-                    
+
 					if full_episodes == "true":
 						oc.add(EpisodeObject(url=video_url, show=display_title, title=video_title, summary=summary, duration=duration,
 							originally_available_at=originally_available_at, thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
 					else:
+						if video_title == '':
+							video_title = summary
 						oc.add(VideoClipObject(url=video_url, title=video_title, summary=summary, duration=duration,
 							originally_available_at=originally_available_at, thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
 
@@ -250,8 +254,8 @@ def APIVideos(full_episodes, title, display_title, url):
 		for episode in data.xpath('//l:Video', namespaces=API_NAMESPACE):
 			video_url = episode.xpath('.//l:CBSURL', namespaces=API_NAMESPACE)[0].text
 			title = episode.xpath('.//l:Title', namespaces=API_NAMESPACE)[0].text
-			date = Datetime.ParseDate(episode.xpath('.//l:ProductionDate', namespaces=API_NAMESPACE)[0].text).date()
 			summary = episode.xpath('.//l:Description', namespaces=API_NAMESPACE)[0].text
+			date = Datetime.ParseDate(episode.xpath('.//l:ProductionDate', namespaces=API_NAMESPACE)[0].text).date()
 			duration = int(episode.xpath('.//l:LengthSecs', namespaces=API_NAMESPACE)[0].text)*1000
 			images = episode.xpath('.//l:Images/l:Image', namespaces=API_NAMESPACE)
 			thumbs = SortImagesFromAPI(images)
@@ -267,12 +271,14 @@ def APIVideos(full_episodes, title, display_title, url):
 		for clip in data.xpath('//l:Video', namespaces=API_NAMESPACE):
 			video_url = clip.xpath('.//l:CBSURL', namespaces=API_NAMESPACE)[0].text
 			title = clip.xpath('.//l:Title', namespaces=API_NAMESPACE)[0].text
-			date = Datetime.ParseDate(clip.xpath('.//l:ProductionDate', namespaces=API_NAMESPACE)[0].text).date()
 			summary = clip.xpath('.//l:Description', namespaces=API_NAMESPACE)[0].text
+			if title == '':
+				title = summary
+			date = Datetime.ParseDate(clip.xpath('.//l:ProductionDate', namespaces=API_NAMESPACE)[0].text).date()
 			duration = int(clip.xpath('.//l:LengthSecs', namespaces=API_NAMESPACE)[0].text)*1000
 			images = clip.xpath('.//l:Images/l:Image', namespaces=API_NAMESPACE)
 			thumbs = SortImagesFromAPI(images)
-    
+
 			oc.add(VideoClipObject(url=video_url, title=title, originally_available_at=date, duration=duration,summary = summary,
 				thumb = Resource.ContentsOfURLWithFallback(url=thumbs, fallback='icon-default.png')))
 			
