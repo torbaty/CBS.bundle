@@ -25,8 +25,8 @@ CAROUSEL_URL = 'http://www.cbs.com/carousels/%s/video/%s/%s/0/100/'
 API_TITLES = ["48 Hours Mystery"]
 API_IDS = {"48 Hours Mystery":{"episodes":"503443", "clips":"18559"}}
 
-RE_FULL_EPS = Regex("\.loadUpCarousel\('Full Episodes','(0_video_.+?)', '(.+?)', ([0-9]+), .+?\);", Regex.DOTALL|Regex.IGNORECASE)
-RE_CLIPS = Regex("loadUpCarousel\('Newest Clips','(0_video_.+?)', '(.+?)', ([0-9]+), .+?\);", Regex.DOTALL)
+RE_FULL_EPS = Regex("\.loadUpCarousel\('Full Episodes','([0-9]_video_.+?)', '(.+?)', ([0-9]+), .+?\);", Regex.DOTALL|Regex.IGNORECASE)
+RE_CLIPS = Regex("loadUpCarousel\('Newest Clips','([0-9]_video_.+?)', '(.+?)', ([0-9]+), .+?\);", Regex.DOTALL)
 
 ####################################################################################################
 def Start():
