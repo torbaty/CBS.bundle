@@ -116,6 +116,10 @@ def EpisodesAndClips(title, display_title, url):
 @route('/video/cbs/videos')
 def Videos(full_episodes, title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
+	if url.endswith('/video/'):
+		pass
+	else:
+		url = url.rstrip('/') + '/video/'
 	try:
 		page = HTTP.Request(url).content
 	except:
