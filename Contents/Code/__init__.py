@@ -30,8 +30,6 @@ RE_CLIPS = Regex("loadUpCarousel\('Newest Clips','([0-9]_video_.+?)', '(.+?)', (
 
 ####################################################################################################
 def Start():
-	Plugin.AddPrefixHandler('/video/cbs', MainMenu, NAME, ICON, ART)
-
 	ObjectContainer.art = R(ART)
 	ObjectContainer.title1 = NAME
 	DirectoryObject.thumb = R(ICON)
@@ -40,6 +38,7 @@ def Start():
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.16) Gecko/20110319 Firefox/3.6.16'
 
 ####################################################################################################
+@handler('/video/cbs', 'CBS', ICON, ART)
 def MainMenu():
 	oc = ObjectContainer()
 	for category in CATEGORIES:
@@ -47,6 +46,7 @@ def MainMenu():
 	return oc
 
 ####################################################################################################
+@route('/video/cbs/shows')
 def Shows(title, category):
 	oc = ObjectContainer(title2=title)
 
@@ -101,6 +101,7 @@ def Shows(title, category):
 	return oc
 
 ####################################################################################################
+@route('/video/cbs/epsandclips')
 def EpisodesAndClips(title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
 	if display_title not in API_TITLES:
@@ -112,8 +113,13 @@ def EpisodesAndClips(title, display_title, url):
 	return oc
 
 ####################################################################################################
+@route('/video/cbs/videos')
 def Videos(full_episodes, title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
+	if url.endswith('/video/'):
+		pass
+	else:
+		url = url.rstrip('/') + '/video/'
 	try:
 		page = HTTP.Request(url).content
 	except:
@@ -132,8 +138,12 @@ def Videos(full_episodes, title, display_title, url):
 					date = Datetime.FromTimestamp(int(episode['airDate'])/1000).date()
 					summary = episode['description']
 					video_url = episode['url']
-					index = int(episode['episodeNum'])
-					season = int(episode['seasonNum'])
+					try:
+						index = int(episode['episodeNum'])
+						season = int(episode['seasonNum'])
+					except:
+						index = None
+						season = None
 					show = episode['seriesTitle']
 					duration = int(episode['duration'])*1000
 					content_rating = episode['rating']
@@ -184,6 +194,7 @@ def Videos(full_episodes, title, display_title, url):
         
 	return oc
 ####################################################################################################
+@route('/video/cbs/oldervideos')
 def OlderVideos(full_episodes, title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
 	show_title = title
@@ -246,6 +257,7 @@ def OlderVideos(full_episodes, title, display_title, url):
 		return oc
 
 ####################################################################################################
+@route('/video/cbs/apivideos')
 def APIVideos(full_episodes, title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
 
@@ -284,16 +296,20 @@ def APIVideos(full_episodes, title, display_title, url):
 			
 	return oc
 ####################################################################################################
+@route('/video/cbs/sortimages')
 def SortImages(images=[]):
 
   sorted_thumbs = sorted(images, key=lambda thumb : int(thumb['height']), reverse=True)
   thumb_list = []
   for thumb in sorted_thumbs:
       thumb_list.append(thumb['url'])
+      if len(thumb_list) > 2:
+        break
 
   return thumb_list
 
 ####################################################################################################
+@route('/video/cbs/sortapiimages')
 def SortImagesFromAPI(images=[]):
   
   thumbs = []
@@ -306,5 +322,7 @@ def SortImagesFromAPI(images=[]):
   thumb_list = []
   for thumb in sorted_thumbs:
       thumb_list.append(thumb['url'])
+      if len(thumb_list) > 2:
+        break
 
   return thumb_list
