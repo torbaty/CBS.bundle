@@ -1,5 +1,3 @@
-####################################################################################################
-
 NAME = 'CBS'
 ART  = 'art-default.jpg'
 ICON = 'icon-default.png'
@@ -30,37 +28,42 @@ RE_CLIPS = Regex("loadUpCarousel\('Newest Clips','([0-9]_video_.+?)', '(.+?)', (
 
 ####################################################################################################
 def Start():
+
 	ObjectContainer.art = R(ART)
 	ObjectContainer.title1 = NAME
 	DirectoryObject.thumb = R(ICON)
 
 	HTTP.CacheTime = CACHE_1HOUR
-	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.16) Gecko/20110319 Firefox/3.6.16'
+	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:18.0) Gecko/20100101 Firefox/18.0'
 
 ####################################################################################################
 @handler('/video/cbs', 'CBS', ICON, ART)
 def MainMenu():
+
 	oc = ObjectContainer()
+
 	for category in CATEGORIES:
 		oc.add(DirectoryObject(key=Callback(Shows, title=category['title'], category=category['label']), title=category['title']))
+
 	return oc
 
 ####################################################################################################
 @route('/video/cbs/shows')
 def Shows(title, category):
+
 	oc = ObjectContainer(title2=title)
 
 	for item in HTML.ElementFromURL(CBS_LIST).xpath('//div[@id="' + category + '"]//div[@id="show_block_interior"]'):
 		title = item.xpath('.//img')[0].get('alt')
 		display_title = title
 		url = item.xpath('.//a')[0].get('href')
+
 		if 'http://www.cbs.com/' not in url:
 			url = 'http://www.cbs.com' + url
-			
-		if '/nyc_22/' in url:#For some reason the CBS site has "Person of Interest" listed as the 'alt' for the "NYC 22" image
-			url = url + 'video/'
-			title = 'NYC 22'
-			display_title= 'NYC 22'
+
+		thumb = item.xpath('.//img')[0].get('src')
+		if 'http://www.cbs.com/' not in thumb:
+			thumb = 'http://www.cbs.com' + thumb
 
 		### Naming differences
 		if title == 'Late Show With David Letterman':
@@ -96,59 +99,75 @@ def Shows(title, category):
 
 		title = title.replace(' ', '%20').replace('&', '%26').replace("'", '')
 
-		oc.add(DirectoryObject(key=Callback(EpisodesAndClips, title=title, display_title=display_title, url=url), title=display_title))
+		oc.add(DirectoryObject(
+			key = Callback(EpisodesAndClips, title=title, display_title=display_title, url=url),
+			title = display_title,
+			thumb = thumb
+		))
 
 	return oc
 
 ####################################################################################################
 @route('/video/cbs/epsandclips')
 def EpisodesAndClips(title, display_title, url):
+
 	oc = ObjectContainer(title2=display_title)
+
 	if display_title not in API_TITLES:
 		oc.add(DirectoryObject(key=Callback(Videos, full_episodes='true', title=title, display_title=display_title, url=url), title='Full Episodes'))
 		oc.add(DirectoryObject(key=Callback(Videos, full_episodes='false', title=title, display_title=display_title, url=url), title='Clips'))
 	else:
 		oc.add(DirectoryObject(key=Callback(APIVideos, full_episodes='true', title=title, display_title=display_title, url=url), title='Full Episodes'))
 		oc.add(DirectoryObject(key=Callback(APIVideos, full_episodes='false', title=title, display_title=display_title, url=url), title='Clips'))
+
 	return oc
 
 ####################################################################################################
 @route('/video/cbs/videos')
 def Videos(full_episodes, title, display_title, url):
+
 	oc = ObjectContainer(title2=display_title)
+
 	if url.endswith('/video/'):
 		pass
 	else:
 		url = url.rstrip('/') + '/video/'
+
 	try:
 		page = HTTP.Request(url).content
 	except:
 		return ObjectContainer(header="CBS", message="An error has occurred. No content found.")
+
 	if full_episodes == 'true':
 		episodes = []
 		request_params = RE_FULL_EPS.findall(page)
+
 		if request_params != None:
 			for i in range(len(request_params)):
 				show_id = request_params[i][2]
 				server = request_params[i][0]
 				hash = request_params[i][1]
 				episode_list = JSON.ObjectFromURL(CAROUSEL_URL % (show_id, server, hash))
+
 				for episode in episode_list['itemList']:
 					video_title = episode['title']
 					date = Datetime.FromTimestamp(int(episode['airDate'])/1000).date()
 					summary = episode['description']
 					video_url = episode['url']
+
 					try:
 						index = int(episode['episodeNum'])
 						season = int(episode['seasonNum'])
 					except:
 						index = None
 						season = None
+
 					show = episode['seriesTitle']
 					duration = int(episode['duration'])*1000
 					content_rating = episode['rating']
 					thumbs = SortImages(episode['thumbnailSet'])
 					episode_string = "S%sE%s - %s" % (season, index, video_title)
+
 					if episode_string not in episodes:
 						oc.add(EpisodeObject(url=video_url, title=video_title, show=show, index=index, season=season, summary=summary,
 							duration=duration, originally_available_at=date, content_rating=content_rating,
@@ -158,44 +177,53 @@ def Videos(full_episodes, title, display_title, url):
 						pass
                 else:
 			pass
-		if len(oc) == 0:
+
+		if len(oc) < 1:
 			return OlderVideos(full_episodes=full_episodes, title=title, display_title=display_title, url=url)
 		else:
 			oc.add(DirectoryObject(key=Callback(OlderVideos, full_episodes=full_episodes, title=title, display_title=display_title, url=url), title="Older Episodes"))
 	else:
 		request_params = RE_CLIPS.findall(page)
+
 		if request_params != None:
 			for i in range(len(request_params)):
 				show_id = request_params[i][2]
 				server = request_params[i][0]
 				hash = request_params[i][1]
 				clip_list = JSON.ObjectFromURL(CAROUSEL_URL % (show_id, server, hash))
+
 				for clip in clip_list['itemList']:
 					video_title = clip['title']
 					summary = clip['description']
+
 					if video_title == '':
 						video_title = summary
+
 					date = Datetime.FromTimestamp(int(clip['pubDate'])/1000).date()
 					video_url = clip['url']
 					duration = int(clip['duration'])*1000
 					thumbs = SortImages(clip['thumbnailSet'])
 					oc.add(VideoClipObject(url=video_url, title=video_title, summary=summary, duration=duration, originally_available_at=date,
 						thumb=Resource.ContentsOfURLWithFallback(url=thumbs, fallback=ICON)))
+
 					if len(oc) > 24:
 						break
 				if len(oc) > 24:
 						break
 		else:
 			pass
-		if len(oc) == 0:
+
+		if len(oc) < 1:
 			return OlderVideos(full_episodes=full_episodes, title=title, display_title=display_title, url=url)
 		else:
 			oc.add(DirectoryObject(key=Callback(OlderVideos, full_episodes=full_episodes, title=title, display_title=display_title, url=url), title="Older clips"))
-        
+
 	return oc
+
 ####################################################################################################
 @route('/video/cbs/oldervideos')
 def OlderVideos(full_episodes, title, display_title, url):
+
 	oc = ObjectContainer(title2=display_title)
 	show_title = title
 	processed_titles = []
@@ -217,6 +245,7 @@ def OlderVideos(full_episodes, title, display_title, url):
 						encoding = " - HD " + item['encodingProfile'][3:8].replace(' ', '')
 					else:
 						encoding = ''
+
 					video_title = title + str(encoding)
 					pid = item['PID']
 					video_url = url + '?play=true&pid=' + pid
@@ -236,7 +265,7 @@ def OlderVideos(full_episodes, title, display_title, url):
 							originally_available_at=originally_available_at, thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
 
 					processed_titles.append(title)
-					
+
 					if len(oc) > 49:
 						break
 				if len(oc) > 49:
@@ -247,11 +276,11 @@ def OlderVideos(full_episodes, title, display_title, url):
 		except:
 			Log(' --> Failed!')
 			pass
+
 		if len(oc) > 49:
 			break
-		
 
-	if len(oc) == 0:
+	if len(oc) < 1:
 		return ObjectContainer(header='Empty', message="There aren't any items")
 	else:
 		return oc
@@ -259,10 +288,12 @@ def OlderVideos(full_episodes, title, display_title, url):
 ####################################################################################################
 @route('/video/cbs/apivideos')
 def APIVideos(full_episodes, title, display_title, url):
+
 	oc = ObjectContainer(title2=display_title)
 
 	if full_episodes == 'true':
 		data = XML.ElementFromURL(API_URL % API_IDS[display_title]['episodes'])
+
 		for episode in data.xpath('//l:Video', namespaces=API_NAMESPACE):
 			video_url = episode.xpath('.//l:CBSURL', namespaces=API_NAMESPACE)[0].text
 			title = episode.xpath('.//l:Title', namespaces=API_NAMESPACE)[0].text
@@ -275,17 +306,20 @@ def APIVideos(full_episodes, title, display_title, url):
 			rating = episode.xpath('.//l:ContentRatingOverall', namespaces=API_NAMESPACE)[0].text
 			season = int(episode.xpath('.//l:SeasonNumber', namespaces=API_NAMESPACE)[0].text)
 			index = int(episode.xpath('.//l:EpisodeNumber', namespaces=API_NAMESPACE)[0].text)
-			
+
 			oc.add(EpisodeObject(url=video_url, title=title, show=show, summary=summary, originally_available_at=date, duration=duration,
 				content_rating=rating, season=season, index=index, thumb=Resource.ContentsOfURLWithFallback(url=thumbs, fallback='icon-default.png')))
 	else:
 		data = XML.ElementFromURL(API_URL % API_IDS[display_title]['clips'])
+
 		for clip in data.xpath('//l:Video', namespaces=API_NAMESPACE):
 			video_url = clip.xpath('.//l:CBSURL', namespaces=API_NAMESPACE)[0].text
 			title = clip.xpath('.//l:Title', namespaces=API_NAMESPACE)[0].text
 			summary = clip.xpath('.//l:Description', namespaces=API_NAMESPACE)[0].text
+
 			if title == '':
 				title = summary
+
 			date = Datetime.ParseDate(clip.xpath('.//l:ProductionDate', namespaces=API_NAMESPACE)[0].text).date()
 			duration = int(clip.xpath('.//l:LengthSecs', namespaces=API_NAMESPACE)[0].text)*1000
 			images = clip.xpath('.//l:Images/l:Image', namespaces=API_NAMESPACE)
@@ -293,36 +327,42 @@ def APIVideos(full_episodes, title, display_title, url):
 
 			oc.add(VideoClipObject(url=video_url, title=title, originally_available_at=date, duration=duration,summary = summary,
 				thumb = Resource.ContentsOfURLWithFallback(url=thumbs, fallback='icon-default.png')))
-			
+
 	return oc
+
 ####################################################################################################
 @route('/video/cbs/sortimages')
 def SortImages(images=[]):
 
-  sorted_thumbs = sorted(images, key=lambda thumb : int(thumb['height']), reverse=True)
-  thumb_list = []
-  for thumb in sorted_thumbs:
-      thumb_list.append(thumb['url'])
-      if len(thumb_list) > 2:
-        break
+	sorted_thumbs = sorted(images, key=lambda thumb : int(thumb['height']), reverse=True)
+	thumb_list = []
 
-  return thumb_list
+	for thumb in sorted_thumbs:
+		thumb_list.append(thumb['url'])
+
+		if len(thumb_list) > 2:
+			break
+
+	return thumb_list
 
 ####################################################################################################
 @route('/video/cbs/sortapiimages')
 def SortImagesFromAPI(images=[]):
   
-  thumbs = []
-  for image in images:
-      height = image.get('height')
-      url = image.xpath('./l:ImageURL', namespaces=API_NAMESPACE)[0].text
-      thumbs.append({'height':height, 'url':url})
+	thumbs = []
 
-  sorted_thumbs = sorted(thumbs, key=lambda thumb : int(thumb['height']), reverse=True)
-  thumb_list = []
-  for thumb in sorted_thumbs:
-      thumb_list.append(thumb['url'])
-      if len(thumb_list) > 2:
-        break
+	for image in images:
+		height = image.get('height')
+		url = image.xpath('./l:ImageURL', namespaces=API_NAMESPACE)[0].text
+		thumbs.append({'height':height, 'url':url})
 
-  return thumb_list
+	sorted_thumbs = sorted(thumbs, key=lambda thumb: int(thumb['height']), reverse=True)
+	thumb_list = []
+
+	for thumb in sorted_thumbs:
+		thumb_list.append(thumb['url'])
+
+		if len(thumb_list) > 2:
+			break
+
+	return thumb_list
