@@ -1,8 +1,0 @@
-[
-  {
-    "id":"hd",
-    "type":"bool",
-    "label":"Include all available HD videos",
-    "default":"false"
-  }
-]

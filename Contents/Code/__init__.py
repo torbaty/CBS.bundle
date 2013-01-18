@@ -1,5 +1,5 @@
 NAME = 'CBS'
-ART  = 'art-default.jpg'
+ART = 'art-default.jpg'
 ICON = 'icon-default.png'
 
 CBS_LIST = 'http://www.cbs.com/video/'
@@ -9,19 +9,24 @@ API_NAMESPACE  = {'l':'http://api.cnet.com/rest/v1.0/ns'}
 
 SHOWNAME_LIST = 'http://cbs.feeds.theplatform.com/ps/JSON/PortalService/1.6/getReleaseList?PID=GIIJWbEj_zj6weINzALPyoHte4KLYNmp&startIndex=1&endIndex=50&query=contentCustomBoolean|EpisodeFlag|%s&query=CustomBoolean|IsLowFLVRelease|false&query=contentCustomText|SeriesTitle|%s&query=servers|%s&sortField=airdate&sortDescending=true&field=airdate&field=author&field=description&field=length&field=PID&field=thumbnailURL&field=title&field=encodingProfile&contentCustomField=label'
 CBS_SMIL = 'http://release.theplatform.com/content.select?format=SMIL&Tracking=true&balance=true&pid=%s'
-SERVERS = ['CBS%20Production%20Delivery%20h264%20Akamai',
-           'CBS%20Production%20News%20Delivery%20Akamai%20Flash',
-           'CBS%20Production%20Entertainment%20Delivery%20Akamai%20Flash',
-           'CBS%20Production%20Entertainment%20Delivery%20Akamai%20Flash%20Progressive',
-           'CBS%20Delivery%20Akamai%20Flash']
-CATEGORIES = [{"title":"Primetime","label":"primetime"},{"title":"Daytime","label":"daytime"},
-                {"title":"Late Night","label":"latenight"},{"title":"Classics","label":"classics"},
-                {"title":"Specials","label":"specials"}]
+SERVERS = [
+	'CBS%20Production%20Delivery%20h264%20Akamai',
+	'CBS%20Production%20News%20Delivery%20Akamai%20Flash',
+	'CBS%20Production%20Entertainment%20Delivery%20Akamai%20Flash',
+	'CBS%20Production%20Entertainment%20Delivery%20Akamai%20Flash%20Progressive',
+	'CBS%20Delivery%20Akamai%20Flash'
+]
+CATEGORIES = [
+	{"title":"Primetime","label":"primetime"},
+	{"title":"Daytime","label":"daytime"},
+	{"title":"Late Night","label":"latenight"},
+	{"title":"Classics","label":"classics"}
+]
 
 CAROUSEL_URL = 'http://www.cbs.com/carousels/%s/video/%s/%s/0/100/'
 
 API_TITLES = ["48 Hours Mystery"]
-API_IDS = {"48 Hours Mystery":{"episodes":"503443", "clips":"18559"}}
+API_IDS = {"48 Hours Mystery": {"episodes":"503443", "clips":"18559"}}
 
 RE_FULL_EPS = Regex("\.loadUpCarousel\('Full Episodes','([0-9]_video_.+?)', '(.+?)', ([0-9]+), .+?\);", Regex.DOTALL|Regex.IGNORECASE)
 RE_CLIPS = Regex("loadUpCarousel\('Newest Clips','([0-9]_video_.+?)', '(.+?)', ([0-9]+), .+?\);", Regex.DOTALL)
@@ -43,7 +48,10 @@ def MainMenu():
 	oc = ObjectContainer()
 
 	for category in CATEGORIES:
-		oc.add(DirectoryObject(key=Callback(Shows, title=category['title'], category=category['label']), title=category['title']))
+		oc.add(DirectoryObject(
+			key = Callback(Shows, title=category['title'], category=category['label']),
+			title = category['title']
+		))
 
 	return oc
 
@@ -131,7 +139,7 @@ def Videos(full_episodes, title, display_title, url):
 	if url.endswith('/video/'):
 		pass
 	else:
-		url = url.rstrip('/') + '/video/'
+		url = '%s/video/' % url.rstrip('/')
 
 	try:
 		page = HTTP.Request(url).content
@@ -203,11 +211,19 @@ def Videos(full_episodes, title, display_title, url):
 					video_url = clip['url']
 					duration = int(clip['duration'])*1000
 					thumbs = SortImages(clip['thumbnailSet'])
-					oc.add(VideoClipObject(url=video_url, title=video_title, summary=summary, duration=duration, originally_available_at=date,
-						thumb=Resource.ContentsOfURLWithFallback(url=thumbs, fallback=ICON)))
+
+					oc.add(VideoClipObject(
+						url = video_url,
+						title = video_title,
+						summary = summary,
+						duration = duration,
+						originally_available_at = date,
+						thumb = Resource.ContentsOfURLWithFallback(url=thumbs, fallback=ICON)
+					))
 
 					if len(oc) > 24:
 						break
+
 				if len(oc) > 24:
 						break
 		else:
@@ -216,7 +232,10 @@ def Videos(full_episodes, title, display_title, url):
 		if len(oc) < 1:
 			return OlderVideos(full_episodes=full_episodes, title=title, display_title=display_title, url=url)
 		else:
-			oc.add(DirectoryObject(key=Callback(OlderVideos, full_episodes=full_episodes, title=title, display_title=display_title, url=url), title="Older clips"))
+			oc.add(DirectoryObject(
+				key = Callback(OlderVideos, full_episodes=full_episodes, title=title, display_title=display_title, url=url),
+				title = "Older clips"
+			))
 
 	return oc
 
@@ -227,7 +246,7 @@ def OlderVideos(full_episodes, title, display_title, url):
 	oc = ObjectContainer(title2=display_title)
 	show_title = title
 	processed_titles = []
-	
+
 	for server in SERVERS:
 		feed_url = SHOWNAME_LIST % (full_episodes, show_title, server)
 		Log(' --> Checking server: ' + server)
@@ -256,18 +275,33 @@ def OlderVideos(full_episodes, title, display_title, url):
 					originally_available_at = Datetime.FromTimestamp(airdate).date()
 
 					if full_episodes == "true":
-						oc.add(EpisodeObject(url=video_url, show=display_title, title=video_title, summary=summary, duration=duration,
-							originally_available_at=originally_available_at, thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
+						oc.add(EpisodeObject(
+							url = video_url,
+							show = display_title,
+							title = video_title,
+							summary = summary,
+							duration = duration,
+							originally_available_at = originally_available_at,
+							thumb = Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)
+						))
 					else:
 						if video_title == '':
 							video_title = summary
-						oc.add(VideoClipObject(url=video_url, title=video_title, summary=summary, duration=duration,
-							originally_available_at=originally_available_at, thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
+
+						oc.add(VideoClipObject(
+							url = video_url,
+							title = video_title,
+							summary = summary,
+							duration = duration,
+							originally_available_at = originally_available_at,
+							thumb = Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)
+						))
 
 					processed_titles.append(title)
 
 					if len(oc) > 49:
 						break
+
 				if len(oc) > 49:
 					break
 			Log(' --> Success! Found ' + str(len(feeds['items'])) + ' items')
@@ -307,8 +341,18 @@ def APIVideos(full_episodes, title, display_title, url):
 			season = int(episode.xpath('.//l:SeasonNumber', namespaces=API_NAMESPACE)[0].text)
 			index = int(episode.xpath('.//l:EpisodeNumber', namespaces=API_NAMESPACE)[0].text)
 
-			oc.add(EpisodeObject(url=video_url, title=title, show=show, summary=summary, originally_available_at=date, duration=duration,
-				content_rating=rating, season=season, index=index, thumb=Resource.ContentsOfURLWithFallback(url=thumbs, fallback='icon-default.png')))
+			oc.add(EpisodeObject(
+				url = video_url,
+				title = title,
+				show = show,
+				summary = summary,
+				originally_available_at = date,
+				duration = duration,
+				content_rating = rating,
+				season = season,
+				index = index,
+				thumb = Resource.ContentsOfURLWithFallback(url=thumbs, fallback='icon-default.png')
+			))
 	else:
 		data = XML.ElementFromURL(API_URL % API_IDS[display_title]['clips'])
 
@@ -325,8 +369,14 @@ def APIVideos(full_episodes, title, display_title, url):
 			images = clip.xpath('.//l:Images/l:Image', namespaces=API_NAMESPACE)
 			thumbs = SortImagesFromAPI(images)
 
-			oc.add(VideoClipObject(url=video_url, title=title, originally_available_at=date, duration=duration,summary = summary,
-				thumb = Resource.ContentsOfURLWithFallback(url=thumbs, fallback='icon-default.png')))
+			oc.add(VideoClipObject(
+				url = video_url,
+				title = title,
+				originally_available_at = date,
+				duration = duration,
+				summary = summary,
+				thumb = Resource.ContentsOfURLWithFallback(url=thumbs, fallback='icon-default.png')
+			))
 
 	return oc
 
@@ -348,7 +398,7 @@ def SortImages(images=[]):
 ####################################################################################################
 @route('/video/cbs/sortapiimages')
 def SortImagesFromAPI(images=[]):
-  
+
 	thumbs = []
 
 	for image in images:
