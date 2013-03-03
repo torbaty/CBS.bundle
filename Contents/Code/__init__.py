@@ -1,7 +1,3 @@
-NAME = 'CBS'
-ART = 'art-default.jpg'
-ICON = 'icon-default.png'
-
 CBS_LIST = 'http://www.cbs.com/video/'
 
 API_URL = "http://api.cnet.com/restApi/v1.0/videoSearch?categoryIds=%s&orderBy=productionDate~desc,createDate~desc&limit=20&iod=images,videoMedia,relatedLink,breadcrumb,relatedAssets,broadcast,lowcache&partTag=cntv&showBroadcast=true"
@@ -17,10 +13,10 @@ SERVERS = [
 	'CBS%20Delivery%20Akamai%20Flash'
 ]
 CATEGORIES = [
-	{"title":"Primetime","label":"primetime"},
-	{"title":"Daytime","label":"daytime"},
-	{"title":"Late Night","label":"latenight"},
-	{"title":"Classics","label":"classics"}
+	{"title": "Primetime",	"label": "primetime"},
+	{"title": "Daytime",	"label": "daytime"},
+	{"title": "Late Night",	"label": "latenight"},
+	{"title": "Classics",	"label": "classics"}
 ]
 
 CAROUSEL_URL = 'http://www.cbs.com/carousels/%s/video/%s/%s/0/100/'
@@ -29,20 +25,17 @@ API_TITLES = ["48 Hours Mystery"]
 API_IDS = {"48 Hours Mystery": {"episodes":"503443", "clips":"18559"}}
 
 RE_FULL_EPS = Regex("\.loadUpCarousel\('Full Episodes','([0-9]_video_.+?)', '(.+?)', ([0-9]+), .+?\);", Regex.DOTALL|Regex.IGNORECASE)
-RE_CLIPS = Regex("loadUpCarousel\('Newest Clips','([0-9]_video_.+?)', '(.+?)', ([0-9]+), .+?\);", Regex.DOTALL)
+RE_CLIPS = Regex("loadUpCarousel\('Newest Clips','([0-9]_video_.+?)', '(.+?)', ([0-9]+), .+?\);", Regex.DOTALL|Regex.IGNORECASE)
 
 ####################################################################################################
 def Start():
 
-	ObjectContainer.art = R(ART)
-	ObjectContainer.title1 = NAME
-	DirectoryObject.thumb = R(ICON)
-
+	ObjectContainer.title1 = 'CBS'
 	HTTP.CacheTime = CACHE_1HOUR
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:18.0) Gecko/20100101 Firefox/18.0'
 
 ####################################################################################################
-@handler('/video/cbs', 'CBS', ICON, ART)
+@handler('/video/cbs', 'CBS')
 def MainMenu():
 
 	oc = ObjectContainer()
@@ -177,9 +170,19 @@ def Videos(full_episodes, title, display_title, url):
 					episode_string = "S%sE%s - %s" % (season, index, video_title)
 
 					if episode_string not in episodes:
-						oc.add(EpisodeObject(url=video_url, title=video_title, show=show, index=index, season=season, summary=summary,
-							duration=duration, originally_available_at=date, content_rating=content_rating,
-							thumb=Resource.ContentsOfURLWithFallback(url=thumbs, fallback=ICON)))
+						oc.add(EpisodeObject(
+							url = video_url,
+							title = video_title,
+							show = show,
+							index = index,
+							season = season,
+							summary = summary,
+							duration = duration,
+							originally_available_at = date,
+							content_rating = content_rating,
+							thumb = Resource.ContentsOfURLWithFallback(url=thumbs)
+						))
+
 						episodes.append(episode_string)
 					else:
 						pass
@@ -189,7 +192,10 @@ def Videos(full_episodes, title, display_title, url):
 		if len(oc) < 1:
 			return OlderVideos(full_episodes=full_episodes, title=title, display_title=display_title, url=url)
 		else:
-			oc.add(DirectoryObject(key=Callback(OlderVideos, full_episodes=full_episodes, title=title, display_title=display_title, url=url), title="Older Episodes"))
+			oc.add(DirectoryObject(
+				key = Callback(OlderVideos, full_episodes=full_episodes, title=title, display_title=display_title, url=url),
+				title = "Older Episodes"
+			))
 	else:
 		request_params = RE_CLIPS.findall(page)
 
@@ -218,7 +224,7 @@ def Videos(full_episodes, title, display_title, url):
 						summary = summary,
 						duration = duration,
 						originally_available_at = date,
-						thumb = Resource.ContentsOfURLWithFallback(url=thumbs, fallback=ICON)
+						thumb = Resource.ContentsOfURLWithFallback(url=thumbs)
 					))
 
 					if len(oc) > 24:
@@ -282,7 +288,7 @@ def OlderVideos(full_episodes, title, display_title, url):
 							summary = summary,
 							duration = duration,
 							originally_available_at = originally_available_at,
-							thumb = Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)
+							thumb = Resource.ContentsOfURLWithFallback(url=thumb)
 						))
 					else:
 						if video_title == '':
@@ -294,7 +300,7 @@ def OlderVideos(full_episodes, title, display_title, url):
 							summary = summary,
 							duration = duration,
 							originally_available_at = originally_available_at,
-							thumb = Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)
+							thumb = Resource.ContentsOfURLWithFallback(url=thumb)
 						))
 
 					processed_titles.append(title)
@@ -338,21 +344,36 @@ def APIVideos(full_episodes, title, display_title, url):
 			thumbs = SortImagesFromAPI(images)
 			show = display_title
 			rating = episode.xpath('.//l:ContentRatingOverall', namespaces=API_NAMESPACE)[0].text
-			season = int(episode.xpath('.//l:SeasonNumber', namespaces=API_NAMESPACE)[0].text)
-			index = int(episode.xpath('.//l:EpisodeNumber', namespaces=API_NAMESPACE)[0].text)
 
-			oc.add(EpisodeObject(
-				url = video_url,
-				title = title,
-				show = show,
-				summary = summary,
-				originally_available_at = date,
-				duration = duration,
-				content_rating = rating,
-				season = season,
-				index = index,
-				thumb = Resource.ContentsOfURLWithFallback(url=thumbs, fallback='icon-default.png')
-			))
+			try: season = int(episode.xpath('.//l:SeasonNumber', namespaces=API_NAMESPACE)[0].text)
+			except: season = None
+
+			try: index = int(episode.xpath('.//l:EpisodeNumber', namespaces=API_NAMESPACE)[0].text)
+			except: index = None
+
+			if show and season and index:
+				oc.add(EpisodeObject(
+					url = video_url,
+					title = title,
+					show = show,
+					summary = summary,
+					originally_available_at = date,
+					duration = duration,
+					content_rating = rating,
+					season = season,
+					index = index,
+					thumb = Resource.ContentsOfURLWithFallback(url=thumbs)
+				))
+			else:
+				oc.add(VideoClipObject(
+					url = video_url,
+					title = title,
+					summary = summary,
+					originally_available_at = date,
+					duration = duration,
+					content_rating = rating,
+					thumb = Resource.ContentsOfURLWithFallback(url=thumbs)
+				))
 	else:
 		data = XML.ElementFromURL(API_URL % API_IDS[display_title]['clips'])
 
@@ -375,7 +396,7 @@ def APIVideos(full_episodes, title, display_title, url):
 				originally_available_at = date,
 				duration = duration,
 				summary = summary,
-				thumb = Resource.ContentsOfURLWithFallback(url=thumbs, fallback='icon-default.png')
+				thumb = Resource.ContentsOfURLWithFallback(url=thumbs)
 			))
 
 	return oc
