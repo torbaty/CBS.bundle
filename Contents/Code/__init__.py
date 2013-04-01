@@ -16,7 +16,8 @@ CATEGORIES = [
 	{"title": "Primetime",	"label": "primetime"},
 	{"title": "Daytime",	"label": "daytime"},
 	{"title": "Late Night",	"label": "latenight"},
-	{"title": "Classics",	"label": "classics"}
+	{"title": "Classics",	"label": "classics"},
+	{"title": "Specials",	"label": "specials"}
 ]
 
 CAROUSEL_URL = 'http://www.cbs.com/carousels/%s/video/%s/%s/0/100/'
