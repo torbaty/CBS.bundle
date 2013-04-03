@@ -1,11 +1,14 @@
 CBS_LIST = 'http://www.cbs.com/video/'
-CAROUSEL_URL = 'http://www.cbs.com/carousels/videosBySection/%s/0/40/'
+CAROUSEL_URL = 'http://www.cbs.com/carousels/videosBySection/%s/0/15/'
 CATEGORIES = [
 	{"title": "Primetime",	"label": "primetime"},
 	{"title": "Daytime",	"label": "daytime"},
 	{"title": "Late Night",	"label": "latenight"},
 	{"title": "Specials",	"label": "specials"}
 ]
+
+RE_S_EP_DURATION = Regex('S(\d+)? Ep(\d+)? \((\d+:\d+)\)')
+EXCLUDE_SHOWS = ('CBS Evening News')
 
 ####################################################################################################
 def Start():
@@ -37,6 +40,9 @@ def Shows(title, category):
 	for item in HTML.ElementFromURL(CBS_LIST).xpath('//div[@id="%s"]//div[@id="show_block_interior"]' % category):
 		title = item.xpath('./a/img/@alt')[0]
 
+		if title in EXCLUDE_SHOWS:
+			continue
+
 		url = item.xpath('./a/@href')[0]
 		if not url.startswith('http://'):
 			url = 'http://www.cbs.com/%s' % url.lstrip('/')
@@ -61,7 +67,12 @@ def Category(title, url, thumb):
 
 	oc = ObjectContainer(title2=title)
 
-	for carousel in HTML.ElementFromURL(url).xpath('//div[starts-with(@id, "id-carousel")]/@id'):
+	try:
+		html = HTML.ElementFromURL(url)
+	except:
+		return ObjectContainer(header="Empty", message="Can't find video's for this show.")
+
+	for carousel in html.xpath('//div[starts-with(@id, "id-carousel")]/@id'):
 		json_url = CAROUSEL_URL % carousel.split('-')[-1]
 		json_obj = JSON.ObjectFromURL(json_url)
 
@@ -82,9 +93,13 @@ def Video(title, json_url):
 
 	oc = ObjectContainer(title2=title)
 
+	if title.lower() == 'full episodes':
+		type = 'episode'
+	else:
+		type = 'video'
+
 	for video in JSON.ObjectFromURL(json_url)['result']['videos']:
-		show = video['series_title']
-		title = video['episode_title']
+		title = video['title'].split(' - ', 1)[-1]
 
 		thumb = video['thumb']['large']
 		if not thumb:
@@ -94,11 +109,37 @@ def Video(title, json_url):
 		if not url.startswith('http://'):
 			url = 'http://www.cbs.com/%s' % url.lstrip('/')
 
-		oc.add(EpisodeObject(
-			url = url,
-			show = show,
-			title = title,
-			thumb = Resource.ContentsOfURLWithFallback(thumb)
-		))
+		if type == 'video':
+			oc.add(VideoClipObject(
+				url = url,
+				title = title,
+				thumb = Resource.ContentsOfURLWithFallback(thumb)
+			))
+		elif type == 'episode':
+			show = video['series_title']
+
+			try:
+				html = HTML.ElementFromURL(url)
+			except:
+				continue
+
+			summary = html.xpath('//meta[@property="og:description"]/@content')[0]
+			episode_info = html.xpath('//div[@class="title"]/span/text()')[0]
+
+			(season, episode, duration) = RE_S_EP_DURATION.search(episode_info).groups()
+			season = int(season) if season is not None else None
+			index = int(episode) if episode is not None else None
+			duration = Datetime.MillisecondsFromString(duration) if duration is not None else None
+
+			oc.add(EpisodeObject(
+				url = url,
+				show = show,
+				title = title,
+				summary = summary,
+				season = season,
+				index = index,
+				duration = duration,
+				thumb = Resource.ContentsOfURLWithFallback(thumb)
+			))
 
 	return oc
