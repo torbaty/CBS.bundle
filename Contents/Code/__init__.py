@@ -4,7 +4,8 @@ CATEGORIES = [
 	{"title": "Primetime",	"label": "primetime"},
 	{"title": "Daytime",	"label": "daytime"},
 	{"title": "Late Night",	"label": "latenight"},
-	{"title": "Specials",	"label": "specials"}
+	{"title": "Specials",	"label": "specials"},
+    {"title": "Classics",   "label": "classics"}
 ]
 
 RE_S_EP_DURATION = Regex('S(\d+)? Ep(\d+)? \((\d+:\d+)\)')
