@@ -1,5 +1,6 @@
 CBS_LIST = 'http://www.cbs.com/video/'
 CAROUSEL_URL = 'http://www.cbs.com/carousels/videosBySection/%s/0/15/'
+CLASSICS_URL = 'http://www.cbs.com/shows/%s/videos_more/season/0/videos/%s/%s'
 CATEGORIES = [
 	{"title": "Primetime",	"label": "primetime"},
 	{"title": "Daytime",	"label": "daytime"},
@@ -9,6 +10,9 @@ CATEGORIES = [
 ]
 
 RE_S_EP_DURATION = Regex('S(\d+)? Ep(\d+)? \((\d+:\d+)\)')
+RE_SAFE_TITLE = Regex('/classics/(.+?)/video')
+RE_SEASON = Regex('Season ([0-9]+),')
+
 EXCLUDE_SHOWS = ('CBS Evening News')
 
 ####################################################################################################
@@ -25,8 +29,12 @@ def MainMenu():
 	oc = ObjectContainer()
 
 	for category in CATEGORIES:
+        if category['title'] == 'Classics':
+            classics = True
+        else:
+            classics = False    
 		oc.add(DirectoryObject(
-			key = Callback(Shows, title=category['title'], category=category['label']),
+			key = Callback(Shows, title=category['title'], category=category['label'], classics=classics),
 			title = category['title']
 		))
 
@@ -34,7 +42,7 @@ def MainMenu():
 
 ####################################################################################################
 @route('/video/cbs/shows')
-def Shows(title, category):
+def Shows(title, category, classics=False):
 
 	oc = ObjectContainer(title2=title)
 
@@ -53,12 +61,19 @@ def Shows(title, category):
 		thumb = item.xpath('./a/img/@src')[0]
 		if not thumb.startswith('http://'):
 			thumb = 'http://www.cbs.com/%s' % thumb.lstrip('/')
-
-		oc.add(DirectoryObject(
-			key = Callback(Category, title=title, url=url, thumb=thumb),
-			title = title,
-			thumb = Resource.ContentsOfURLWithFallback(thumb)
-		))
+        
+        if classics:
+            oc.add(DirectoryObject(
+    		    key = Callback(ClassicCategories, title=title, url=url, thumb=thumb),
+			    title = title,
+			    thumb = Resource.ContentsOfURLWithFallback(thumb)
+		        ))
+        else:
+		    oc.add(DirectoryObject(
+			    key = Callback(Category, title=title, url=url, thumb=thumb),
+			    title = title,
+			    thumb = Resource.ContentsOfURLWithFallback(thumb)
+		        ))
 
 	return oc
 
@@ -144,3 +159,81 @@ def Video(title, json_url):
 			))
 
 	return oc
+####################################################################################################
+@route('/video/cbs/category')
+def ClassicCategories(title, url, thumb):
+
+    oc = ObjectContainer(title2=title)
+    
+    video_types = [
+        {'title': 'Full Episodes',  'label': 'episodes'},
+        {'title': 'Clips',          'label':, 'clips'}
+                ]
+	for category in video_types:
+        oc.add(DirectoryObject(
+				key = Callback(Classics, title=title, url=url, thumb=thumb, label=category['label']),
+				title = category['title'],
+				thumb = Resource.ContentsOfURLWithFallback(thumb)
+			))
+
+	return oc
+####################################################################################################
+@route('/video/cbs/category')
+def Classics(title, url, thumb, label, offset=0):
+
+    oc = ObjectContainer(title2=title)
+    
+    safe_title = RE_SAFE_TITLE.search(url).group(1)
+	json_url = CLASSICS_URL % (safe_title, label, offset)
+    try:
+		json_obj = JSON.ObjectFromURL(json_url)
+        if json_obj['success']:
+            html = HTML.ElementFromString(json_obj['html'])
+        else:
+            raise e
+	except:
+		return ObjectContainer(header="Empty", message="Can't find video's for this show.")
+    
+    for entry in html.xpath('//div[@class="video-content-item"]'):
+        video_url = html.xpath('.//a')[0].get('href')
+        if not video_url.startswith('http://'):
+    		viddeo_url = 'http://www.cbs.com/%s' % video_url.lstrip('/')
+		video_title = html.xpath('.//div[@class="video-content-title"]')[0].text
+        video_thumb = html.xpath('.//div[@class="video-content-thumb-container"]//img')[0].get('src')
+        summary = html.xpath('.//div[@class="video-content-description"]')[0].text
+        duration = html.xpath('.//div[@class="video-content-duration"][0]//text()')[1].strip('()')
+        durationMS = Datetime.MillisecondsFromString(duration)
+        airdate = html.xpath('.//div[@class="video-content-air-date"][0]//text()')[1].strip(': ->')
+        airdate = Datetime.ParseDate(airdate).date
+        
+        if label == 'episodes':
+            season = RE_SEASON.search(html.xpath('div[@class="video-content-season-info"]')[0].text).group(1)
+            oc.add(EpisodeObject(
+                url = video_url,
+                title = video_title,
+                summary = summary,
+                originally_available_at = airdate,
+                duration = durationMS,
+                thumb = Resource.ContentsOfURLWithFallback(video_thumb),
+                season = int(season),
+                show = title
+                ))
+        else:
+            oc.add(VideoClipObject(
+                url = video_url,
+                title = video_title,
+                summary = summary,
+                originally_available_at = airdate,
+                duration = durationMS,
+                thumb = Resource.ContentsOfURLWithFallback(video_thumb)
+                ))
+
+	if json_obj['more']:
+        offset = json_obj['next']
+        oc.add(NextPageObject(
+				key = Callback(Classics, title=title, url=url, thumb=thumb, label=label, offset=offset)
+			))
+
+	return oc
+
+####################################################################################################
