@@ -29,13 +29,8 @@ def MainMenu():
 	oc = ObjectContainer()
 
 	for category in CATEGORIES:
-		if category['title'] == 'Classics':
-			classics = True
-		else:
-			classics = False
-
 		oc.add(DirectoryObject(
-			key = Callback(Shows, title=category['title'], category=category['label'], classics=classics),
+			key = Callback(Shows, title=category['title'], category=category['label']),
 			title = category['title']
 		))
 
@@ -43,7 +38,7 @@ def MainMenu():
 
 ####################################################################################################
 @route('/video/cbs/shows')
-def Shows(title, category, classics=False):
+def Shows(title, category):
 
 	oc = ObjectContainer(title2=title)
 
@@ -63,7 +58,7 @@ def Shows(title, category, classics=False):
 		if not thumb.startswith('http://'):
 			thumb = 'http://www.cbs.com/%s' % thumb.lstrip('/')
 
-		if classics:
+		if category == 'classics':
 			oc.add(DirectoryObject(
 				key = Callback(ClassicCategories, title=title, url=url, thumb=thumb),
 				title = title,
@@ -143,7 +138,7 @@ def Video(title, json_url):
 			summary = html.xpath('//meta[@property="og:description"]/@content')[0]
 			episode_info = html.xpath('//div[@class="title"]/span/text()')[0]
 
-			(season, episode, duration) = RE_S_EP_DURATION.search(episode_info).groups()
+			(s_ep, season, episode, duration) = RE_S_EP_DURATION.search(episode_info).groups()
 			season = int(season) if season is not None else None
 			index = int(episode) if episode is not None else None
 			duration = Datetime.MillisecondsFromString(duration) if duration is not None else None
@@ -246,7 +241,7 @@ def Classics(title, url, thumb, label, offset=0):
 				url = video_url,
 				title = video_title,
 				summary = summary,
-				duration = durationMS,
+				duration = duration,
 				originally_available_at = airdate,
 				thumb = Resource.ContentsOfURLWithFallback(video_thumb)
 			))
@@ -257,7 +252,8 @@ def Classics(title, url, thumb, label, offset=0):
 		offset = json_obj['next']
 
 		oc.add(NextPageObject(
-			key = Callback(Classics, title=title, url=url, thumb=thumb, label=label, offset=offset)
+			key = Callback(Classics, title=title, url=url, thumb=thumb, label=label, offset=offset),
+			title = 'More...'
 		))
 
 	return oc
