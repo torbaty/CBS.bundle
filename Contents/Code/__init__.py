@@ -7,7 +7,7 @@ CATEGORIES = [
 	{"title": "Specials",	"label": "specials"}
 ]
 
-RE_S_EP_DURATION = Regex('S(\d+)? Ep(\d+)? \((\d+:\d+)\)')
+RE_S_EP_DURATION = Regex('(S(\d+) Ep(\d+) )?\((\d+:\d+)\)')
 EXCLUDE_SHOWS = ('CBS Evening News')
 
 ####################################################################################################
@@ -126,7 +126,7 @@ def Video(title, json_url):
 			summary = html.xpath('//meta[@property="og:description"]/@content')[0]
 			episode_info = html.xpath('//div[@class="title"]/span/text()')[0]
 
-			(season, episode, duration) = RE_S_EP_DURATION.search(episode_info).groups()
+			(s_ep, season, episode, duration) = RE_S_EP_DURATION.search(episode_info).groups()
 			season = int(season) if season is not None else None
 			index = int(episode) if episode is not None else None
 			duration = Datetime.MillisecondsFromString(duration) if duration is not None else None
