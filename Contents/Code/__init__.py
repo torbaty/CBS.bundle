@@ -1,13 +1,18 @@
 CBS_LIST = 'http://www.cbs.com/video/'
 CAROUSEL_URL = 'http://www.cbs.com/carousels/videosBySection/%s/0/15/'
+CLASSICS_URL = 'http://www.cbs.com/shows/%s/videos_more/season/0/videos/%s/%s'
 CATEGORIES = [
-	{"title": "Primetime",	"label": "primetime"},
-	{"title": "Daytime",	"label": "daytime"},
-	{"title": "Late Night",	"label": "latenight"},
-	{"title": "Specials",	"label": "specials"}
+	{"title": "Primetime",  "label": "primetime"},
+	{"title": "Daytime",    "label": "daytime"},
+	{"title": "Late Night", "label": "latenight"},
+	{"title": "Specials",   "label": "specials"},
+	{"title": "Classics",   "label": "classics"}
 ]
 
 RE_S_EP_DURATION = Regex('(S(\d+) Ep(\d+) )?\((\d+:\d+)\)')
+RE_SAFE_TITLE = Regex('/classics/(.+?)/video')
+RE_SEASON = Regex('Season ([0-9]+),')
+
 EXCLUDE_SHOWS = ('CBS Evening News')
 
 ####################################################################################################
@@ -24,8 +29,13 @@ def MainMenu():
 	oc = ObjectContainer()
 
 	for category in CATEGORIES:
+		if category['title'] == 'Classics':
+			classics = True
+		else:
+			classics = False
+
 		oc.add(DirectoryObject(
-			key = Callback(Shows, title=category['title'], category=category['label']),
+			key = Callback(Shows, title=category['title'], category=category['label'], classics=classics),
 			title = category['title']
 		))
 
@@ -33,7 +43,7 @@ def MainMenu():
 
 ####################################################################################################
 @route('/video/cbs/shows')
-def Shows(title, category):
+def Shows(title, category, classics=False):
 
 	oc = ObjectContainer(title2=title)
 
@@ -53,11 +63,18 @@ def Shows(title, category):
 		if not thumb.startswith('http://'):
 			thumb = 'http://www.cbs.com/%s' % thumb.lstrip('/')
 
-		oc.add(DirectoryObject(
-			key = Callback(Category, title=title, url=url, thumb=thumb),
-			title = title,
-			thumb = Resource.ContentsOfURLWithFallback(thumb)
-		))
+		if classics:
+			oc.add(DirectoryObject(
+				key = Callback(ClassicCategories, title=title, url=url, thumb=thumb),
+				title = title,
+				thumb = Resource.ContentsOfURLWithFallback(thumb)
+			))
+		else:
+			oc.add(DirectoryObject(
+				key = Callback(Category, title=title, url=url, thumb=thumb),
+				title = title,
+				thumb = Resource.ContentsOfURLWithFallback(thumb)
+			))
 
 	return oc
 
@@ -126,7 +143,7 @@ def Video(title, json_url):
 			summary = html.xpath('//meta[@property="og:description"]/@content')[0]
 			episode_info = html.xpath('//div[@class="title"]/span/text()')[0]
 
-			(s_ep, season, episode, duration) = RE_S_EP_DURATION.search(episode_info).groups()
+			(season, episode, duration) = RE_S_EP_DURATION.search(episode_info).groups()
 			season = int(season) if season is not None else None
 			index = int(episode) if episode is not None else None
 			duration = Datetime.MillisecondsFromString(duration) if duration is not None else None
@@ -141,5 +158,106 @@ def Video(title, json_url):
 				duration = duration,
 				thumb = Resource.ContentsOfURLWithFallback(thumb)
 			))
+
+	return oc
+
+####################################################################################################
+@route('/video/cbs/classiccategories')
+def ClassicCategories(title, url, thumb):
+
+	oc = ObjectContainer(title2=title)
+
+	video_types = [
+		{'title': 'Full Episodes', 'label': 'episodes'},
+		{'title': 'Clips', 'label': 'clips'}
+	]
+
+	for category in video_types:
+		oc.add(DirectoryObject(
+			key = Callback(Classics, title=title, url=url, thumb=thumb, label=category['label']),
+			title = category['title'],
+			thumb = Resource.ContentsOfURLWithFallback(thumb)
+		))
+
+	return oc
+
+####################################################################################################
+@route('/video/cbs/classics')
+def Classics(title, url, thumb, label, offset=0):
+
+	oc = ObjectContainer(title2=title)
+	safe_title = RE_SAFE_TITLE.search(url).group(1)
+	json_url = CLASSICS_URL % (safe_title, label, offset)
+
+	try:
+		json_string = HTTP.Request(json_url).content
+		''' The JSON returned often has un-escaped EOL characters included in the HTML whiich breaks
+			the JSON parsing. So, we try to remove them by splitting the lines and rejoining them (properly).
+			While we're at it, we remove some commenting from the HTML so that we can parse the airdates. '''
+		fixed_json_string = ''.join((json_string).splitlines()).replace('<!--','').replace('-->', '')
+		json_obj = JSON.ObjectFromString(fixed_json_string)
+
+		if json_obj['success']:
+			html = HTML.ElementFromString(json_obj['html'])
+		else:
+			raise e
+	except:
+		return ObjectContainer(header="Empty", message="Can't find video's for this show.")
+
+	for entry in html.xpath('//div[@class="video-content-item"]'):
+		video_url = entry.xpath('.//a')[0].get('href')
+
+		if not video_url.startswith('http://'):
+			video_url = 'http://www.cbs.com/%s' % video_url.lstrip('/')
+
+		video_title = entry.xpath('.//div[@class="video-content-title"]')[0].text
+		video_thumb = entry.xpath('.//div[@class="video-content-thumb-container"]//img')[0].get('src')
+
+		try: summary = entry.xpath('.//div[@class="video-content-description"]')[0].text
+		except: summary = None
+
+		try:
+			duration = entry.xpath('.//div[@class="video-content-duration"]/text()')[0].strip(') (')
+			duration = Datetime.MillisecondsFromString(duration)
+		except:
+			duration = None
+
+		try:
+			airdate = entry.xpath('.//div[@class="video-content-air-date"]/text()')[1].strip(':')
+			airdate = Datetime.ParseDate(airdate).date()
+		except:
+			airdate = None
+
+		if label == 'episodes':
+			season = RE_SEASON.search(entry.xpath('.//div[@class="video-content-season-info"]')[0].text).group(1)
+
+			oc.add(EpisodeObject(
+				url = video_url,
+				title = video_title,
+				summary = summary,
+				duration = duration,
+				originally_available_at = airdate,
+				thumb = Resource.ContentsOfURLWithFallback(video_thumb),
+				season = int(season),
+				show = title
+			))
+		else:
+			oc.add(VideoClipObject(
+				url = video_url,
+				title = video_title,
+				summary = summary,
+				duration = durationMS,
+				originally_available_at = airdate,
+				thumb = Resource.ContentsOfURLWithFallback(video_thumb)
+			))
+
+	oc.objects.sort(key = lambda obj: obj.originally_available_at)
+
+	if json_obj['more']:
+		offset = json_obj['next']
+
+		oc.add(NextPageObject(
+			key = Callback(Classics, title=title, url=url, thumb=thumb, label=label, offset=offset)
+		))
 
 	return oc
