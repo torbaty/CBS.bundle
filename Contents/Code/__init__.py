@@ -1,5 +1,5 @@
 CBS_LIST = 'http://www.cbs.com/video/'
-CAROUSEL_URL = 'http://www.cbs.com/carousels/videosBySection/%s/0/15/'
+CAROUSEL_URL = 'http://www.cbs.com/carousels/videosBySection/%s/offset/0/limit/15/'
 CLASSICS_URL = 'http://www.cbs.com/shows/%s/videos_more/season/0/videos/%s/%s'
 CATEGORIES = [
 	{"title": "Primetime",  "label": "primetime"},
@@ -110,7 +110,7 @@ def Video(title, json_url):
 	else:
 		type = 'video'
 
-	for video in JSON.ObjectFromURL(json_url)['result']['videos']:
+	for video in JSON.ObjectFromURL(json_url)['result']['data']:
 		title = video['title'].split(' - ', 1)[-1]
 
 		thumb = video['thumb']['large']
