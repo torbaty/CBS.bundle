@@ -1,5 +1,5 @@
 CBS_LIST = 'http://www.cbs.com/video/'
-CAROUSEL_URL = 'http://www.cbs.com/carousels/videosBySection/%s/offset/0/limit/15/'
+CAROUSEL_URL = 'http://www.cbs.com/carousels/videosBySection/%s/offset/0/limit/15/xs/0'
 CLASSICS_URL = 'http://www.cbs.com/shows/%s/videos_more/season/0/videos/%s/%s'
 CATEGORIES = [
 	{"title": "Primetime",  "label": "primetime"},
