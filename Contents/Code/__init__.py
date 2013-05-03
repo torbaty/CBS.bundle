@@ -48,7 +48,7 @@ def Shows(title, category):
 		if title in EXCLUDE_SHOWS:
 			continue
 
-		url = item.xpath('./a/@href')[0]
+		url = item.xpath('./a[contains(text(), "Watch Now")]/@href')[0]
 		if not url.startswith('http://'):
 			url = 'http://www.cbs.com/%s' % url.lstrip('/')
 		if not url.endswith('/video/'):
