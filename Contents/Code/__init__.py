@@ -13,14 +13,14 @@ RE_S_EP_DURATION = Regex('(S(\d+) Ep(\d+) )?\((\d+:\d+)\)')
 RE_SAFE_TITLE = Regex('/classics/(.+?)/video')
 RE_SEASON = Regex('Season ([0-9]+),')
 
-EXCLUDE_SHOWS = ('CBS Evening News')
+EXCLUDE_SHOWS = ('CBS Evening News', 'Live on Letterman')
 
 ####################################################################################################
 def Start():
 
 	ObjectContainer.title1 = 'CBS'
 	HTTP.CacheTime = CACHE_1HOUR
-	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:19.0) Gecko/20100101 Firefox/19.0'
+	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:22.0) Gecko/20100101 Firefox/22.0'
 
 ####################################################################################################
 @handler('/video/cbs', 'CBS')
@@ -48,7 +48,7 @@ def Shows(title, category):
 		if title in EXCLUDE_SHOWS:
 			continue
 
-		url = item.xpath('./a[contains(text(), "Watch Now")]/@href')[0]
+		url = item.xpath('./a/@href')[0]
 		if not url.startswith('http://'):
 			url = 'http://www.cbs.com/%s' % url.lstrip('/')
 		if not url.endswith('/video/'):
@@ -117,6 +117,8 @@ def Video(title, json_url):
 		if not thumb:
 			thumb = video['thumb']['small']
 
+		airdate = Datetime.ParseDate(video['airdate']).date()
+
 		url = video['url']
 		if not url.startswith('http://'):
 			url = 'http://www.cbs.com/%s' % url.lstrip('/')
@@ -125,14 +127,15 @@ def Video(title, json_url):
 			oc.add(VideoClipObject(
 				url = url,
 				title = title,
+				originally_available_at = airdate,
 				thumb = Resource.ContentsOfURLWithFallback(thumb)
 			))
 		elif type == 'episode':
 			show = video['series_title']
 
 			try:
-				html = HTML.ElementFromURL(url)
-			except:
+				html = HTML.ElementFromURL(url, follow_redirects=False)
+			except Ex.RedirectError, e:
 				continue
 
 			summary = html.xpath('//meta[@property="og:description"]/@content')[0]
@@ -148,12 +151,14 @@ def Video(title, json_url):
 				show = show,
 				title = title,
 				summary = summary,
+				originally_available_at = airdate,
 				season = season,
 				index = index,
 				duration = duration,
 				thumb = Resource.ContentsOfURLWithFallback(thumb)
 			))
 
+	oc.objects.sort(key=lambda obj: obj.originally_available_at, reverse=True)
 	return oc
 
 ####################################################################################################
