@@ -12,7 +12,7 @@ RE_S_EP_DURATION = Regex('(S(\d+) Ep(\d+) )?\((\d+:\d+)\)')
 RE_SAFE_TITLE = Regex('/shows/([^/]+)')
 RE_SEASON = Regex('Season ([0-9]+),')
 
-EXCLUDE_SHOWS = ('CBS Evening News', 'Live on Letterman')
+EXCLUDE_SHOWS = ('Live On Letterman')
 
 ####################################################################################################
 def Start():
