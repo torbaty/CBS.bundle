@@ -29,7 +29,7 @@ def MainMenu():
 
 	for category in CATEGORIES:
 		oc.add(DirectoryObject(
-			key = Callback(Shows, title=category['title'], category=category['categoryId']),
+			key = Callback(Shows, cat_title=category['title'], category=category['categoryId']),
 			title = category['title']))
 
 	return oc
@@ -40,7 +40,7 @@ def Shows(cat_title, category):
 
 	oc = ObjectContainer(title2=cat_title)
 
-	for item in JSON.FromURL(CATEGORY_CAROUSEL % category)['result']['data']:
+	for item in JSON.ObjectFromURL(CATEGORY_CAROUSEL % category)['result']['data']:
 		title = item['title']
 
 		if title in EXCLUDE_SHOWS:
@@ -83,7 +83,7 @@ def Category(title, url, thumb):
 		return ObjectContainer(header="Empty", message="Can't find video's for this show.")
 
 	for carousel in html.xpath('//div[starts-with(@id, "id-carousel")]/@id'):
-		json_url = CAROUSEL_URL % carousel.split('-')[-1]
+		json_url = CATEGORY_CAROUSEL % carousel.split('-')[-1]
 		json_obj = JSON.ObjectFromURL(json_url)
 
 		if json_obj['success']:
