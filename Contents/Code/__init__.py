@@ -2,10 +2,13 @@ CATEGORY_CAROUSEL = 'http://www.cbs.com/carousels/showsByCategory/%s/offset/0/li
 SECTION_CAROUSEL = 'http://www.cbs.com/carousels/videosBySection/%s/offset/0/limit/15/xs/0'
 CLASSICS_URL = 'http://www.cbs.com/shows/%s/videos_more/season/0/videos/%s/%s'
 CATEGORIES = [
-    {"categoryId":0,"title":"All Current Shows"},{"categoryId":1,"title":"Primetime"},
-    {"categoryId":2,"title":"Daytime"},{"categoryId":3,"title":"Late Night"},
-    {"categoryId":4,"title":"TV Classics"},{"categoryId":5,"title":"CBS.com Originals"},
-    {"categoryId":6,"title":"Movies & Specials"}
+	{"categoryId":0,"title":"All Current Shows"},
+	{"categoryId":1,"title":"Primetime"},
+	{"categoryId":2,"title":"Daytime"},
+	{"categoryId":3,"title":"Late Night"},
+	{"categoryId":4,"title":"TV Classics"},
+	{"categoryId":5,"title":"CBS.com Originals"},
+	{"categoryId":6,"title":"Movies & Specials"}
 ]
 
 RE_S_EP_DURATION = Regex('(S(\d+) Ep(\d+) )?\((\d+:\d+)\)')
