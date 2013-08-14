@@ -83,7 +83,7 @@ def Category(title, url, thumb):
 		return ObjectContainer(header="Empty", message="Can't find video's for this show.")
 
 	for carousel in html.xpath('//div[starts-with(@id, "id-carousel")]/@id'):
-		json_url = CATEGORY_CAROUSEL % carousel.split('-')[-1]
+		json_url = SECTION_CAROUSEL % carousel.split('-')[-1]
 		json_obj = JSON.ObjectFromURL(json_url)
 
 		if json_obj['success']:
