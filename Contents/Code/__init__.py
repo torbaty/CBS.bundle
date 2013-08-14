@@ -1,12 +1,11 @@
-CBS_LIST = 'http://www.cbs.com/video/'
-CAROUSEL_URL = 'http://www.cbs.com/carousels/videosBySection/%s/offset/0/limit/15/xs/0'
+CATEGORY_CAROUSEL = 'http://www.cbs.com/carousels/showsByCategory/%s/offset/0/limit/99/'
+SECTION_CAROUSEL = 'http://www.cbs.com/carousels/videosBySection/%s/offset/0/limit/15/xs/0'
 CLASSICS_URL = 'http://www.cbs.com/shows/%s/videos_more/season/0/videos/%s/%s'
 CATEGORIES = [
-	{"title": "Primetime",  "label": "primetime"},
-	{"title": "Daytime",    "label": "daytime"},
-	{"title": "Late Night", "label": "latenight"},
-	{"title": "Specials",   "label": "specials"},
-	{"title": "Classics",   "label": "classics"}
+    {"categoryId":0,"title":"All Current Shows"},{"categoryId":1,"title":"Primetime"},
+    {"categoryId":2,"title":"Daytime"},{"categoryId":3,"title":"Late Night"},
+    {"categoryId":4,"title":"TV Classics"},{"categoryId":5,"title":"CBS.com Originals"},
+    {"categoryId":6,"title":"Movies & Specials"}
 ]
 
 RE_S_EP_DURATION = Regex('(S(\d+) Ep(\d+) )?\((\d+:\d+)\)')
@@ -30,35 +29,34 @@ def MainMenu():
 
 	for category in CATEGORIES:
 		oc.add(DirectoryObject(
-			key = Callback(Shows, title=category['title'], category=category['label']),
-			title = category['title']
-		))
+			key = Callback(Shows, title=category['title'], category=category['categoryId']),
+			title = category['title']))
 
 	return oc
 
 ####################################################################################################
 @route('/video/cbs/shows')
-def Shows(title, category):
+def Shows(cat_title, category):
 
-	oc = ObjectContainer(title2=title)
+	oc = ObjectContainer(title2=cat_title)
 
-	for item in HTML.ElementFromURL(CBS_LIST).xpath('//div[@id="%s"]//div[@id="show_block_interior"]' % category):
-		title = item.xpath('./a/img/@alt')[0]
+	for item in JSON.FromURL(CATEGORY_CAROUSEL % category)['result']['data']:
+		title = item['title']
 
 		if title in EXCLUDE_SHOWS:
 			continue
 
-		url = item.xpath('./a/@href')[0]
+		url = item['link']
 		if not url.startswith('http://'):
 			url = 'http://www.cbs.com/%s' % url.lstrip('/')
 		if not url.endswith('/video/'):
 			url = '%s/video/' % url.rstrip('/')
 
-		thumb = item.xpath('./a/img/@src')[0]
+		thumb = item['filepath_ipad']
 		if not thumb.startswith('http://'):
 			thumb = 'http://www.cbs.com/%s' % thumb.lstrip('/')
 
-		if category == 'classics':
+		if cat_title == 'TV Classics':
 			oc.add(DirectoryObject(
 				key = Callback(ClassicCategories, title=title, url=url, thumb=thumb),
 				title = title,
