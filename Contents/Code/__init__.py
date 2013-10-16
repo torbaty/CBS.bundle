@@ -45,7 +45,7 @@ def Shows(cat_title, category):
 
 	for item in JSON.ObjectFromURL(CATEGORY_CAROUSEL % category)['result']['data']:
 
-		if not 'filepath_ipad' in item:
+		if not 'filepath_ipad' in item or not 'filepath_show_logo' in item:
 			continue
 
 		title = item['title']
