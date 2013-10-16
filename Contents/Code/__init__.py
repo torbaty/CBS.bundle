@@ -44,6 +44,10 @@ def Shows(cat_title, category):
 	oc = ObjectContainer(title2=cat_title)
 
 	for item in JSON.ObjectFromURL(CATEGORY_CAROUSEL % category)['result']['data']:
+
+		if not 'filepath_ipad' in item:
+			continue
+
 		title = item['title']
 
 		if title in EXCLUDE_SHOWS:
