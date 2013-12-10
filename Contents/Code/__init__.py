@@ -60,8 +60,12 @@ def Shows(cat_title, category):
 			url = '%s/video/' % url.rstrip('/')
 
 		thumb = item['filepath_ipad']
-		if not thumb.startswith('http://'):
-			thumb = 'http://www.cbs.com/%s' % thumb.lstrip('/')
+		if thumb:
+			if not thumb.startswith('http://'):
+				thumb = 'http://www.cbs.com/%s' % thumb.lstrip('/')
+		# HERE WE ADD A DEFAULT VALUE FOR THE THUMB. CURRENTLY USING A LOGO FROM THE WEBSITE
+		else:
+			thumb = 'http://www.cbs.com/assets/images/homepage/2011/CBS_eye.jpg'
 
 		if cat_title == 'TV Classics':
 			oc.add(DirectoryObject(
