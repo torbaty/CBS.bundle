@@ -6,8 +6,8 @@ CATEGORIES = [
 	{"categoryId":1,"title":"Primetime"},
 	{"categoryId":2,"title":"Daytime"},
 	{"categoryId":3,"title":"Late Night"},
-	{"categoryId":4,"title":"TV Classics"},
-	{"categoryId":5,"title":"CBS.com Originals"},
+#	{"categoryId":4,"title":"TV Classics"},
+#	{"categoryId":5,"title":"CBS.com Originals"},
 	{"categoryId":6,"title":"Movies & Specials"}
 ]
 
@@ -15,14 +15,14 @@ RE_S_EP_DURATION = Regex('(S(\d+) Ep(\d+) )?\((\d+:\d+)\)')
 RE_SAFE_TITLE = Regex('/shows/([^/]+)')
 RE_SEASON = Regex('Season ([0-9]+),')
 
-EXCLUDE_SHOWS = ('Live On Letterman')
+EXCLUDE_SHOWS = ("Live On Letterman", "The CBS Dream Team...It's Epic")
 
 ####################################################################################################
 def Start():
 
 	ObjectContainer.title1 = 'CBS'
 	HTTP.CacheTime = CACHE_1HOUR
-	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:22.0) Gecko/20100101 Firefox/22.0'
+	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:25.0) Gecko/20100101 Firefox/25.0'
 
 ####################################################################################################
 @handler('/video/cbs', 'CBS')
@@ -63,9 +63,8 @@ def Shows(cat_title, category):
 		if thumb:
 			if not thumb.startswith('http://'):
 				thumb = 'http://www.cbs.com/%s' % thumb.lstrip('/')
-		# HERE WE ADD A DEFAULT VALUE FOR THE THUMB. CURRENTLY USING A LOGO FROM THE WEBSITE
 		else:
-			thumb = 'http://www.cbs.com/assets/images/homepage/2011/CBS_eye.jpg'
+			thumb = 'http://resources-cdn.plexapp.com/image/source/com.plexapp.plugins.cbs.jpg'
 
 		if cat_title == 'TV Classics':
 			oc.add(DirectoryObject(
