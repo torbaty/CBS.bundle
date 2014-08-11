@@ -113,13 +113,9 @@ def Video(title, json_url):
 
 	oc = ObjectContainer(title2=title)
 
-	if title.lower() == 'full episodes':
-		type = 'episode'
-	else:
-		type = 'video'
-
 	for video in JSON.ObjectFromURL(json_url)['result']['data']:
 		title = video['title'].split(' - ', 1)[-1]
+		vid_type = video['type']
 
 		thumb = video['thumb']['large']
 		if not thumb:
@@ -131,29 +127,22 @@ def Video(title, json_url):
 		if not url.startswith('http://'):
 			url = 'http://www.cbs.com/%s' % url.lstrip('/')
 
-		if type == 'video':
+		if vid_type == 'Clip':
 			oc.add(VideoClipObject(
 				url = url,
 				title = title,
 				originally_available_at = airdate,
 				thumb = Resource.ContentsOfURLWithFallback(thumb)
 			))
-		elif type == 'episode':
+		elif vid_type == 'Full Episode':
 			show = video['series_title']
 
-			try:
-				html = HTML.ElementFromURL(url, follow_redirects=False)
-			except Ex.RedirectError, e:
-				continue
-
-			summary = html.xpath('//meta[@property="og:description"]/@content')[0]
-			episode_info = html.xpath('//div[@class="title"]/span/text()')[0]
-
-			(s_ep, season, episode, duration) = RE_S_EP_DURATION.search(episode_info).groups()
+			(season, episode, duration) = (video['season_number'], video['episode_number'], video['duration'])
 			season = int(season) if season is not None else None
 			index = int(episode) if episode is not None else None
 			duration = Datetime.MillisecondsFromString(duration) if duration is not None else None
-
+			summary = video['description']
+            
 			oc.add(EpisodeObject(
 				url = url,
 				show = show,
