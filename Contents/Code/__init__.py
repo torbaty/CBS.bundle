@@ -138,8 +138,8 @@ def Video(title, json_url):
 			show = video['series_title']
 
 			(season, episode, duration) = (video['season_number'], video['episode_number'], video['duration'])
-			season = int(season) if season is not None else None
-			index = int(episode) if episode is not None else None
+			season = int(season) if season is not None and season != '' else None
+			index = int(episode) if episode is not None and episode != '' else None
 			duration = Datetime.MillisecondsFromString(duration) if duration is not None else None
 			summary = video['description']
             
