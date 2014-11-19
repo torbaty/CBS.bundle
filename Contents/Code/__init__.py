@@ -114,6 +114,10 @@ def Video(title, json_url):
 	oc = ObjectContainer(title2=title)
 
 	for video in JSON.ObjectFromURL(json_url)['result']['data']:
+
+		if 'status' in video and video['status'].lower() != 'available':
+			continue
+
 		title = video['title'].split(' - ', 1)[-1]
 		vid_type = video['type']
 
