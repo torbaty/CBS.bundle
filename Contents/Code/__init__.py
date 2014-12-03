@@ -20,7 +20,7 @@ EXCLUDE_SHOWS = ("Live On Letterman", "The CBS Dream Team...It's Epic")
 ####################################################################################################
 def Start():
 
-	ObjectContainer.title1 = 'RESHET'
+	ObjectContainer.title1 = 'רשת'
 	HTTP.CacheTime = CACHE_1HOUR
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:25.0) Gecko/20100101 Firefox/25.0'
 
