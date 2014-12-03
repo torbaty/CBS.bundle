@@ -2,7 +2,7 @@ CATEGORY_CAROUSEL = 'http://www.cbs.com/carousels/showsByCategory/%s/offset/0/li
 SECTION_CAROUSEL = 'http://www.cbs.com/carousels/videosBySection/%s/offset/0/limit/15/xs/0'
 CLASSICS_URL = 'http://www.cbs.com/shows/%s/videos_more/season/0/videos/%s/%s'
 CATEGORIES = [
-	{"categoryId":0,"title":"ריאליטי"},
+	{"categoryId":0,"title":"reality"},
 	{"categoryId":1,"title":"צחוק"},
 	{"categoryId":2,"title":"דרמות וקומדיות"},
 	{"categoryId":3,"title":"דוקו ואקטואליה"},
