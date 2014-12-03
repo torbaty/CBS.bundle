@@ -2,13 +2,13 @@ CATEGORY_CAROUSEL = 'http://www.cbs.com/carousels/showsByCategory/%s/offset/0/li
 SECTION_CAROUSEL = 'http://www.cbs.com/carousels/videosBySection/%s/offset/0/limit/15/xs/0'
 CLASSICS_URL = 'http://www.cbs.com/shows/%s/videos_more/season/0/videos/%s/%s'
 CATEGORIES = [
-	{"categoryId":0,"title":"All Current Shows"},
-	{"categoryId":1,"title":"Primetime"},
-	{"categoryId":2,"title":"Daytime"},
-	{"categoryId":3,"title":"Late Night"},
+	{"categoryId":0,"title":"ריאליטי"},
+	{"categoryId":1,"title":"צחוק"},
+	{"categoryId":2,"title":"דרמות וקומדיות"},
+	{"categoryId":3,"title":"דוקו ואקטואליה"},
 #	{"categoryId":4,"title":"TV Classics"},
 #	{"categoryId":5,"title":"CBS.com Originals"},
-	{"categoryId":6,"title":"Movies & Specials"}
+	{"categoryId":6,"title":"לייפסטייל"}
 ]
 
 RE_S_EP_DURATION = Regex('(S(\d+) Ep(\d+) )?\((\d+:\d+)\)')
@@ -20,12 +20,12 @@ EXCLUDE_SHOWS = ("Live On Letterman", "The CBS Dream Team...It's Epic")
 ####################################################################################################
 def Start():
 
-	ObjectContainer.title1 = 'CBS'
+	ObjectContainer.title1 = 'RESHET'
 	HTTP.CacheTime = CACHE_1HOUR
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:25.0) Gecko/20100101 Firefox/25.0'
 
 ####################################################################################################
-@handler('/video/cbs', 'CBS')
+@handler('/video/reshet', 'RESHET')
 def MainMenu():
 
 	oc = ObjectContainer()
@@ -38,7 +38,7 @@ def MainMenu():
 	return oc
 
 ####################################################################################################
-@route('/video/cbs/shows')
+@route('/video/reshet/shows')
 def Shows(cat_title, category):
 
 	oc = ObjectContainer(title2=cat_title)
