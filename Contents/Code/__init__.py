@@ -25,7 +25,7 @@ def Start():
 	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:25.0) Gecko/20100101 Firefox/25.0'
 
 ####################################################################################################
-@handler('/video/reshet', 'RESHET')
+@handler('/video/cbs', 'CBS')
 def MainMenu():
 
 	oc = ObjectContainer()
